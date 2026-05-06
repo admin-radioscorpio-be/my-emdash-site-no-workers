@@ -17,5 +17,8 @@
 			"binding": "MEDIA",
 			"bucket_name": "my-emdash-media","preview_bucket_name": "my-emdash-media",
 		},
-	]
+	],
+    "secrets": {
+    "required": ["EMDASH_OAUTH_GOOGLE_CLIENT_ID", "EMDASH_OAUTH_GOOGLE_CLIENT_SECRET"]
+  },
 }
