@@ -13,7 +13,8 @@
 		"deploy": "astro build && wrangler deploy",
 		"typecheck": "astro check",
 		"bootstrap": "emdash init && emdash seed",
-		"seed": "emdash seed"
+		"seed": "emdash seed",
+		"postinstall": "patch-package"
 	},
 	"dependencies": {
 		"@astrojs/cloudflare": "^13.1.7",
@@ -37,8 +38,5 @@
 			"esbuild",
 			"workerd"
 		]
-	},
-	"scripts": {
-    "postinstall": "patch-package"
-    }
+	}
 }
