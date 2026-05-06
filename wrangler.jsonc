@@ -22,8 +22,5 @@
 		{
 			"binding": "LOADER",
 		},
-	],
-    "secrets": {
-    "required": ["EMDASH_OAUTH_GOOGLE_CLIENT_ID", "EMDASH_OAUTH_GOOGLE_CLIENT_SECRET"]
-  },
+	]
 }
