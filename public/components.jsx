@@ -157,6 +157,37 @@ function Player({ playing, setPlaying, accent, nowPlaying }) {
     if (audioRef.current) audioRef.current.volume = vol / 100;
   }, [vol]);
 
+  // Media Session — register action handlers once
+  React.useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    navigator.mediaSession.setActionHandler('play',  () => setPlaying(true));
+    navigator.mediaSession.setActionHandler('pause', () => setPlaying(false));
+    navigator.mediaSession.setActionHandler('stop',  () => setPlaying(false));
+  }, []);
+
+  // Media Session — update metadata when track changes
+  React.useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    const parts = track?.title?.split(' - ') ?? [];
+    const artist = parts.length > 1 ? parts[0].trim() : 'Radio Scorpio';
+    const title  = parts.length > 1 ? parts.slice(1).join(' - ').trim() : (track?.title ?? 'Radio Scorpio 106 FM');
+    const artwork = track?.image
+      ? [{ src: track.image, sizes: '250x250', type: 'image/jpeg' }]
+      : [];
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title,
+      artist,
+      album: 'Radio Scorpio 106 FM',
+      artwork,
+    });
+  }, [track]);
+
+  // Media Session — sync playback state
+  React.useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
+  }, [playing]);
+
   React.useEffect(() => {
     if (!playing) return;
     const t = setInterval(() => setProgress(p => (p + 0.0008) % 1), 80);
