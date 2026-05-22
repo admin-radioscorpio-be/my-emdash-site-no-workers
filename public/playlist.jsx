@@ -1,30 +1,93 @@
 // playlist.jsx — Now playing + history
 
-function Playlist({ setRoute }) {
-  const [q, setQ] = React.useState('');
-  const [range, setRange] = React.useState('1u');
+const PLAYLIST_API = 'https://public.radioscorpio.be/api/playlist/list';
 
-  const visible = TRACKS.filter(t =>
-    !q || t.artist.toLowerCase().includes(q.toLowerCase())
-       || t.title.toLowerCase().includes(q.toLowerCase())
-  );
+const RANGE_SECONDS = { '1u': 3600, '6u': 21600, '24u': 86400, 'week': 7 * 86400 };
+
+function dateStr(daysAgo = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return d.toISOString().slice(0, 10);
+}
+
+function fmtTime(unixTs) {
+  return new Date(unixTs * 1000).toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' });
+}
+
+function parseSong(song) {
+  const idx = song.indexOf(' - ');
+  if (idx === -1) return { artist: song, title: '—' };
+  return { artist: song.slice(0, idx).trim(), title: song.slice(idx + 3).trim() };
+}
+
+function fetchDay(date) {
+  return fetch(PLAYLIST_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ startlistdate: date }),
+  }).then(r => r.json()).then(j => j.playlistitems ?? []);
+}
+
+function usePlaylist(range) {
+  const [items, setItems]     = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError]     = React.useState(null);
+
+  React.useEffect(() => {
+    setLoading(true);
+    setError(null);
+
+    const days = range === 'week' ? 7 : range === '24u' ? 2 : 1;
+    const dates = Array.from({ length: days }, (_, i) => dateStr(i));
+
+    Promise.all(dates.map(fetchDay))
+      .then(results => {
+        const all = results.flat();
+        all.sort((a, b) => b.startTime - a.startTime);
+
+        const cutoff = Date.now() / 1000 - RANGE_SECONDS[range];
+        setItems(all.filter(t => t.startTime >= cutoff));
+        setLoading(false);
+      })
+      .catch(e => { setError(e.message); setLoading(false); });
+  }, [range]);
+
+  return { items, loading, error };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+function Playlist({ setRoute, nowPlaying }) {
+  const [q, setQ]         = React.useState('');
+  const [range, setRange] = React.useState('1u');
+  const { track }         = nowPlaying;
+  const { items, loading, error } = usePlaylist(range);
+
+  const nowParsed = track?.title ? parseSong(track.title) : null;
+
+  const visible = items.filter(t => {
+    if (!q) return true;
+    const { artist, title } = parseSong(t.song);
+    const s = q.toLowerCase();
+    return artist.toLowerCase().includes(s) || title.toLowerCase().includes(s);
+  });
 
   return (
     <>
       <section data-screen-label="03 Playlist — Header">
         <div className="page-hd">
           <div>
-            <div className="crumb">/ Playlist · live update · 18 mei 2026 · 23:42</div>
+            <div className="crumb">/ Playlist · live update · {dateStr()}</div>
             <h1>
               Wat draaide<br/>
               <span style={{color:'var(--mute)'}}>er net?</span>
             </h1>
           </div>
           <div className="aside">
-            // Sinds startup<br/>
-            <b>847 platen vandaag</b>
+            // Historie<br/>
+            <b>{loading ? '…' : `${items.length} tracks`}</b>
             <span style={{display:'block', marginTop:14, color:'var(--mute)'}}>
-              Live API · 5 sec refresh
+              Live API · websocket
             </span>
           </div>
         </div>
@@ -34,37 +97,36 @@ function Playlist({ setRoute }) {
       <div data-screen-label="03 Playlist — Now playing">
         <div className="now-big" style={{maxWidth:1440, margin:'0 auto'}}>
           <div className="cover">
-            <span className="ph">[ ALBUM ART ]</span>
+            {track?.image
+              ? <img src={track.image} alt={track.title}
+                     style={{width:'100%', height:'100%', objectFit:'cover'}}/>
+              : <span className="ph">[ ALBUM ART ]</span>
+            }
           </div>
           <div className="info">
             <div>
               <div className="lbl">
                 <span className="dot pulse" style={{background:'var(--ink)', marginRight:8}}/>
-                Nu draait · 23:42
+                Nu draait
               </div>
-              <div className="artist">Dry Cleaning</div>
-              <div className="title">Hit My Head All Day</div>
+              <div className="artist">{nowParsed?.artist ?? '—'}</div>
+              <div className="title">{nowParsed?.title  ?? '—'}</div>
             </div>
             <div className="row">
-              <span>New Long Leg · 4AD · 2021</span>
-              <span style={{display:'flex', gap:18}}>
-                <a style={{textDecoration:'underline', textUnderlineOffset:4}}>♥ Bewaar</a>
-                <a style={{textDecoration:'underline', textUnderlineOffset:4}}>Bandcamp →</a>
-                <a style={{textDecoration:'underline', textUnderlineOffset:4}}>Spotify →</a>
-              </span>
+              <span style={{color:'var(--mute)'}}>Radio Scorpio 106 FM</span>
             </div>
           </div>
         </div>
       </div>
 
-      <main className="shell" data-screen-label="03 Playlist — History" style={{paddingTop: 0}}>
+      <main className="shell" data-screen-label="03 Playlist — History" style={{paddingTop:0}}>
 
         {/* Tools ──────────── */}
-        <div className="pl-tools" style={{borderTop:'1px solid var(--ink)', marginTop: 0}}>
+        <div className="pl-tools" style={{borderTop:'1px solid var(--ink)', marginTop:0}}>
           <div className="search">
             <Ic.search/>
             <input
-              placeholder="Zoek op artiest, titel of album"
+              placeholder="Zoek op artiest of titel"
               value={q}
               onChange={e => setQ(e.target.value)}
             />
@@ -78,46 +140,56 @@ function Playlist({ setRoute }) {
               </button>
             ))}
           </div>
-          <div className="filter-grp">
-            <button className="is-active">Recent</button>
-            <button>Meest gedraaid</button>
-          </div>
         </div>
 
         {/* TABLE ─────────── */}
-        <div>
-          <div className="pl-head">
-            <span>/ #</span>
-            <span>tijd</span>
-            <span></span>
-            <span>artiest · titel</span>
-            <span>album</span>
-            <span style={{textAlign:'right'}}>duur</span>
+        {loading && (
+          <div style={{padding:'48px 0', textAlign:'center', color:'var(--mute)'}}>
+            Laden…
           </div>
-          {visible.map((t, i) => (
-            <div key={i} className={"pl-row" + (t.now ? ' now' : '')}>
-              <span className="num">{String(i+1).padStart(3, '0')}</span>
-              <span className="time">{t.time}</span>
-              <div className="cover">
-                {t.now
-                  ? <Ic.play cls="lg"/>
-                  : <span>ART</span>}
-              </div>
-              <div>
-                <div className="artist">{t.artist}</div>
-                <div className="title">{t.title}</div>
-              </div>
-              <div style={{fontSize:13}}>
-                {t.album}
-              </div>
-              <span className="dur">{t.dur}</span>
+        )}
+        {error && (
+          <div style={{padding:'48px 0', textAlign:'center', color:'var(--mute)'}}>
+            Kon playlist niet laden.
+          </div>
+        )}
+        {!loading && !error && (
+          <div>
+            <div className="pl-head">
+              <span>/ #</span>
+              <span>tijd</span>
+              <span></span>
+              <span>artiest · titel</span>
             </div>
-          ))}
-        </div>
+            {visible.map((t, i) => {
+              const { artist, title } = parseSong(t.song);
+              const isNow = i === 0 && !q;
+              const defaultArt = 'https://can.radioscorpio.be/2016/03/cd.png';
+              const art = t.imageurl && t.imageurl !== defaultArt ? t.imageurl : null;
+              return (
+                <div key={t.ID} className={"pl-row" + (isNow ? ' now' : '')}>
+                  <span className="num">{String(i + 1).padStart(3, '0')}</span>
+                  <span className="time">{fmtTime(t.startTime)}</span>
+                  <div className="cover">
+                    {art
+                      ? <img src={art} alt={artist}
+                             style={{width:'100%', height:'100%', objectFit:'cover'}}/>
+                      : isNow ? <Ic.play cls="lg"/> : <span style={{color:'var(--mute)', fontSize:10}}>—</span>
+                    }
+                  </div>
+                  <div>
+                    <div className="artist">{artist}</div>
+                    <div className="title">{title}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* STATS strip ──────────── */}
         <div style={{
-          marginTop: 64, marginBottom: 64,
+          marginTop:64, marginBottom:64,
           display:'grid', gridTemplateColumns:'1fr 1fr 1fr',
           border:'1px solid var(--ink)',
         }}>
