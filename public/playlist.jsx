@@ -1,5 +1,5 @@
 // playlist.jsx — Now playing + history
-// insert_ts values from the API are in Brussels local time (not UTC)
+// insert_ts from the API is UTC; display times are converted to Europe/Brussels
 
 const PLAYLIST_API = 'https://public.radioscorpio.be/api/playlist/list';
 
@@ -7,16 +7,15 @@ function dateStr() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Brussels' }); // "YYYY-MM-DD"
 }
 
-function currentBrusselsHour() {
-  return parseInt(new Intl.DateTimeFormat('nl-BE', {
-    timeZone: 'Europe/Brussels', hour: 'numeric', hour12: false,
-  }).format(new Date()));
+function parseInsertTs(ts) {
+  return new Date(ts.replace(' ', 'T') + 'Z'); // treat as UTC
 }
 
-// ts is "YYYY-MM-DD HH:mm:ss" in Brussels local time — extract parts directly
-function tsHour(ts)  { return parseInt(ts.slice(11, 13)); }
-function tsDate(ts)  { return ts.slice(0, 10); }
-function fmtTime(ts) { return ts.slice(11, 16); } // "HH:mm"
+function fmtTime(ts) {
+  return parseInsertTs(ts).toLocaleTimeString('nl-BE', {
+    hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Brussels',
+  });
+}
 
 function parseSong(song) {
   const idx = song.indexOf(' - ');
@@ -24,11 +23,20 @@ function parseSong(song) {
   return { artist: song.slice(0, idx).trim(), title: song.slice(idx + 3).trim() };
 }
 
-function fetchPlaylist(isoDate) {
+// Convert a selected Brussels hour on a date to the correct UTC ISO string for the API
+function brusselsHourToUTC(dateStr, hour) {
+  const approx = new Date(`${dateStr}T${String(hour).padStart(2, '0')}:00:00Z`);
+  const bh = parseInt(new Intl.DateTimeFormat('en', {
+    timeZone: 'Europe/Brussels', hour: 'numeric', hour12: false,
+  }).format(approx));
+  return new Date(approx.getTime() + (hour - bh) * 3600000).toISOString();
+}
+
+function fetchPlaylist(startlistdate) {
   return fetch(PLAYLIST_API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ startlistdate: isoDate, filterdate: '', filterhour: '' }),
+    body: JSON.stringify({ startlistdate, filterdate: '', filterhour: '' }),
   }).then(r => r.json()).then(j => ({
     items:  j.playlistitems ?? [],
     header: j.playlistheader?.[0] ?? null,
@@ -46,27 +54,18 @@ function usePlaylist(archiveDate, archiveHour) {
     setError(null);
     setHeader(null);
 
-    if (archiveDate && archiveHour !== '') {
-      fetchPlaylist(archiveDate + 'T12:00:00.000Z')
-        .then(({ items: all, header: hdr }) => {
-          all.sort((a, b) => a.ID - b.ID);
-          const h = parseInt(archiveHour);
-          setItems(all.filter(t => tsDate(t.insert_ts) === archiveDate && tsHour(t.insert_ts) === h));
-          setHeader(hdr);
-          setLoading(false);
-        })
-        .catch(e => { setError(e.message); setLoading(false); });
-    } else {
-      const today = dateStr();
-      fetchPlaylist(new Date().toISOString())
-        .then(({ items: all }) => {
-          all.sort((a, b) => a.ID - b.ID);
-          const h = currentBrusselsHour();
-          setItems(all.filter(t => tsDate(t.insert_ts) === today && tsHour(t.insert_ts) === h));
-          setLoading(false);
-        })
-        .catch(e => { setError(e.message); setLoading(false); });
-    }
+    const startlistdate = (archiveDate && archiveHour !== '')
+      ? brusselsHourToUTC(archiveDate, parseInt(archiveHour))
+      : new Date().toISOString();
+
+    fetchPlaylist(startlistdate)
+      .then(({ items: all, header: hdr }) => {
+        all.sort((a, b) => a.ID - b.ID);
+        setItems(all);
+        setHeader(hdr);
+        setLoading(false);
+      })
+      .catch(e => { setError(e.message); setLoading(false); });
   }, [archiveDate, archiveHour]);
 
   return { items, header, loading, error };
@@ -99,7 +98,7 @@ function Playlist({ setRoute, nowPlaying }) {
 
   const hourLabel = h => String(h).padStart(2, '0') + ':00';
 
-  const showInfo = isArchive && header
+  const showInfo = header
     ? `${header.showname} · ${header.startClock}–${header.endClock}`
     : null;
 
@@ -126,9 +125,7 @@ function Playlist({ setRoute, nowPlaying }) {
             {isArchive ? '// Archief' : '// Historie'}<br/>
             <b>{loading ? '…' : `${items.length} tracks`}</b>
             <span style={{display:'block', marginTop:14, color:'var(--mute)'}}>
-              {showInfo ?? (isArchive
-                ? `${archiveDate} · ${hourLabel(archiveHour)}–${String(archiveHour).padStart(2,'0')}:59`
-                : 'Live API · websocket')}
+              {showInfo ?? (isArchive ? `${archiveDate} · ${hourLabel(archiveHour)}` : 'Live API · websocket')}
             </span>
           </div>
         </div>
@@ -197,8 +194,8 @@ function Playlist({ setRoute, nowPlaying }) {
           </div>
         </div>
 
-        {/* Show banner — archive only */}
-        {isArchive && header && (
+        {/* Show banner */}
+        {header && (
           <div style={{
             padding: '12px 16px',
             borderBottom: '1px solid var(--rule)',
