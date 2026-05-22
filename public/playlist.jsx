@@ -2,18 +2,18 @@
 
 const PLAYLIST_API = 'https://public.radioscorpio.be/api/playlist/list';
 
-const RANGE_MS = { '1u': 3600e3, '6u': 6 * 3600e3, '24u': 24 * 3600e3, 'week': 7 * 24 * 3600e3 };
-const RANGE_DAYS = { '1u': 1, '6u': 1, '24u': 2, 'week': 7 };
-
-function dateISO(daysAgo = 0) {
-  const d = new Date();
-  d.setDate(d.getDate() - daysAgo);
-  if (daysAgo > 0) d.setHours(23, 59, 59, 999);
-  return d.toISOString();
+function dateISO() {
+  return new Date().toISOString();
 }
 
-function dateStr(daysAgo = 0) {
-  return dateISO(daysAgo).slice(0, 10);
+function dateStr() {
+  return dateISO().slice(0, 10);
+}
+
+function startOfCurrentHour() {
+  const d = new Date();
+  d.setMinutes(0, 0, 0);
+  return d;
 }
 
 // insert_ts is "2026-05-22 00:00:15" in UTC
@@ -41,7 +41,7 @@ function fetchDay(isoDate) {
   }).then(r => r.json()).then(j => j.playlistitems ?? []);
 }
 
-function usePlaylist(range) {
+function usePlaylist() {
   const [items, setItems]     = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError]     = React.useState(null);
@@ -50,19 +50,15 @@ function usePlaylist(range) {
     setLoading(true);
     setError(null);
 
-    const days = RANGE_DAYS[range] ?? 1;
-    const dates = Array.from({ length: days }, (_, i) => dateISO(i));
-
-    Promise.all(dates.map(fetchDay))
-      .then(results => {
-        const all = results.flat();
+    fetchDay(dateISO())
+      .then(all => {
         all.sort((a, b) => b.ID - a.ID);
-        const cutoff = Date.now() - RANGE_MS[range];
+        const cutoff = startOfCurrentHour().getTime();
         setItems(all.filter(t => parseInsertTs(t.insert_ts).getTime() >= cutoff));
         setLoading(false);
       })
       .catch(e => { setError(e.message); setLoading(false); });
-  }, [range]);
+  }, []);
 
   return { items, loading, error };
 }
@@ -70,10 +66,9 @@ function usePlaylist(range) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function Playlist({ setRoute, nowPlaying }) {
-  const [q, setQ]         = React.useState('');
-  const [range, setRange] = React.useState('1u');
-  const { track }         = nowPlaying;
-  const { items, loading, error } = usePlaylist(range);
+  const [q, setQ]     = React.useState('');
+  const { track }     = nowPlaying;
+  const { items, loading, error } = usePlaylist();
 
   const nowParsed = track?.title ? parseSong(track.title) : null;
 
