@@ -4,10 +4,15 @@ const PLAYLIST_API = 'https://public.radioscorpio.be/api/playlist/list';
 
 const RANGE_DAYS = { '1u': 1, '6u': 1, '24u': 2, 'week': 7 };
 
-function dateStr(daysAgo = 0) {
+function dateISO(daysAgo = 0) {
   const d = new Date();
   d.setDate(d.getDate() - daysAgo);
-  return d.toISOString().slice(0, 10);
+  if (daysAgo > 0) d.setHours(23, 59, 59, 999); // end of that day
+  return d.toISOString();
+}
+
+function dateStr(daysAgo = 0) {
+  return dateISO(daysAgo).slice(0, 10);
 }
 
 function fmtTime(unixTs) {
@@ -20,11 +25,11 @@ function parseSong(song) {
   return { artist: song.slice(0, idx).trim(), title: song.slice(idx + 3).trim() };
 }
 
-function fetchDay(date) {
+function fetchDay(isoDate) {
   return fetch(PLAYLIST_API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ startlistdate: date }),
+    body: JSON.stringify({ startlistdate: isoDate, filterdate: '', filterhour: '' }),
   }).then(r => r.json()).then(j => j.playlistitems ?? []);
 }
 
@@ -38,7 +43,7 @@ function usePlaylist(range) {
     setError(null);
 
     const days = RANGE_DAYS[range] ?? 1;
-    const dates = Array.from({ length: days }, (_, i) => dateStr(i));
+    const dates = Array.from({ length: days }, (_, i) => dateISO(i));
 
     Promise.all(dates.map(fetchDay))
       .then(results => {
