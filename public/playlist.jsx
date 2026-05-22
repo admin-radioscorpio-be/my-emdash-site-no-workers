@@ -60,7 +60,8 @@ function usePlaylist(archiveDate, archiveHour) {
 
     fetchPlaylist(startlistdate)
       .then(({ items: all, header: hdr }) => {
-        all.sort((a, b) => a.ID - b.ID);
+        const isArchive = archiveDate && archiveHour !== '';
+        all.sort((a, b) => isArchive ? a.ID - b.ID : b.ID - a.ID);
         setItems(all);
         setHeader(hdr);
         setLoading(false);
@@ -229,7 +230,7 @@ function Playlist({ setRoute, nowPlaying }) {
             </div>
             {visible.map((t, i) => {
               const { artist, title } = parseSong(t.song);
-              const isNow = i === visible.length - 1 && !q && !isArchive;
+              const isNow = i === 0 && !q && !isArchive;
               const defaultArt = 'https://can.radioscorpio.be/2016/03/cd.png';
               const art = t.imageurl && t.imageurl !== defaultArt ? t.imageurl : null;
               return (
