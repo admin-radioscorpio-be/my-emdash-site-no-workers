@@ -74,12 +74,39 @@ function Ticker() {
 }
 
 // ─── Persistent bottom player ─────────────────────────────────────────
+const STREAM_URL = 'https://stream.radioscorpio.be/stream';
+
 function Player({ playing, setPlaying, accent }) {
   const [vol, setVol] = React.useState(70);
   const [bars] = React.useState(() =>
     Array.from({length: 64}, () => 0.2 + Math.random() * 0.8)
   );
   const [progress, setProgress] = React.useState(0.42);
+  const audioRef = React.useRef(null);
+
+  // Create the audio element once
+  React.useEffect(() => {
+    const audio = new Audio(STREAM_URL);
+    audio.volume = vol / 100;
+    audioRef.current = audio;
+    return () => { audio.pause(); audioRef.current = null; };
+  }, []);
+
+  // Play / pause when `playing` toggles
+  React.useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (playing) {
+      audio.play().catch(() => setPlaying(false));
+    } else {
+      audio.pause();
+    }
+  }, [playing]);
+
+  // Sync volume
+  React.useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = vol / 100;
+  }, [vol]);
 
   React.useEffect(() => {
     if (!playing) return;
