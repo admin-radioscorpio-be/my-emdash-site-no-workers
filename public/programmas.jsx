@@ -67,20 +67,20 @@ function useSchedule() {
         const byDaySlot = {};
         allBlocks.forEach(b => { byDaySlot[`${b.day}_${b.start}`] = b; });
 
-        // Rooster time slots = unique start times of non-Nonstop shows, sorted
+        // Rooster time slots = unique start times of all shows, sorted
         const slotSet = new Set();
-        allBlocks.forEach(b => { if (!b.isNonstop) slotSet.add(b.start); });
+        allBlocks.forEach(b => { slotSet.add(b.start); });
         const slots = Array.from(slotSet).sort((a, z) => {
           const [ah, am] = a.split(':').map(Number);
           const [zh, zm] = z.split(':').map(Number);
           return (ah * 60 + am) - (zh * 60 + zm);
         });
 
-        // Grid: unique shows (first occurrence per showid, no Nonstop)
+        // Grid: unique shows (first occurrence per showid)
         const seenIds = new Set();
         const uniqueShows = [];
         allBlocks.forEach(b => {
-          if (!b.isNonstop && !seenIds.has(b.showid)) {
+          if (!seenIds.has(b.showid)) {
             seenIds.add(b.showid);
             uniqueShows.push(b);
           }
@@ -122,10 +122,9 @@ function Programmas({ setRoute }) {
     ? uniqueShows
     : uniqueShows.filter(p => p.genre === genre);
 
-  // Lijst: all non-Nonstop blocks sorted by day order then time
+  // Lijst: all blocks sorted by day order then time
   const dayOrder = Object.fromEntries(DAYS.map((d, i) => [d, i]));
   const listBlocks = allBlocks
-    .filter(b => !b.isNonstop)
     .sort((a, b) => dayOrder[a.day] - dayOrder[b.day] || a.start.localeCompare(b.start));
 
   return (
