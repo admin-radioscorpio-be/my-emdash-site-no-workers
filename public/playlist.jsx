@@ -138,15 +138,6 @@ function Playlist({ setRoute, nowPlaying }) {
               onChange={e => setQ(e.target.value)}
             />
           </div>
-          <div className="filter-grp">
-            {['1u', '6u', '24u', 'week'].map(r => (
-              <button key={r}
-                      className={range === r ? 'is-active' : ''}
-                      onClick={() => setRange(r)}>
-                {r}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* TABLE ─────────── */}
