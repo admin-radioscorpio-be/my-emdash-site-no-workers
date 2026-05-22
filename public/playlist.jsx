@@ -1,31 +1,22 @@
 // playlist.jsx — Now playing + history
+// insert_ts values from the API are in Brussels local time (not UTC)
 
 const PLAYLIST_API = 'https://public.radioscorpio.be/api/playlist/list';
 
-function dateISO() {
-  return new Date().toISOString();
-}
-
 function dateStr() {
-  return dateISO().slice(0, 10);
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Brussels' }); // "YYYY-MM-DD"
 }
 
-function startOfCurrentHour() {
-  const d = new Date();
-  d.setMinutes(0, 0, 0);
-  return d;
+function currentBrusselsHour() {
+  return parseInt(new Intl.DateTimeFormat('nl-BE', {
+    timeZone: 'Europe/Brussels', hour: 'numeric', hour12: false,
+  }).format(new Date()));
 }
 
-// insert_ts is "2026-05-22 00:00:15" in UTC
-function parseInsertTs(ts) {
-  return new Date(ts.replace(' ', 'T') + 'Z');
-}
-
-function fmtTime(insert_ts) {
-  return parseInsertTs(insert_ts).toLocaleTimeString('nl-BE', {
-    hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Brussels',
-  });
-}
+// ts is "YYYY-MM-DD HH:mm:ss" in Brussels local time — extract parts directly
+function tsHour(ts)  { return parseInt(ts.slice(11, 13)); }
+function tsDate(ts)  { return ts.slice(0, 10); }
+function fmtTime(ts) { return ts.slice(11, 16); } // "HH:mm"
 
 function parseSong(song) {
   const idx = song.indexOf(' - ');
@@ -33,55 +24,52 @@ function parseSong(song) {
   return { artist: song.slice(0, idx).trim(), title: song.slice(idx + 3).trim() };
 }
 
-function fetchDay(isoDate) {
+function fetchPlaylist(isoDate) {
   return fetch(PLAYLIST_API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ startlistdate: isoDate, filterdate: '', filterhour: '' }),
-  }).then(r => r.json()).then(j => j.playlistitems ?? []);
-}
-
-function getBrusselsHour(ts) {
-  const parts = new Intl.DateTimeFormat('nl-BE', {
-    timeZone: 'Europe/Brussels',
-    hour: 'numeric',
-    hour12: false,
-  }).formatToParts(parseInsertTs(ts));
-  return parseInt(parts.find(p => p.type === 'hour').value);
+  }).then(r => r.json()).then(j => ({
+    items:  j.playlistitems ?? [],
+    header: j.playlistheader?.[0] ?? null,
+  }));
 }
 
 function usePlaylist(archiveDate, archiveHour) {
   const [items, setItems]     = React.useState([]);
+  const [header, setHeader]   = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError]     = React.useState(null);
 
   React.useEffect(() => {
     setLoading(true);
     setError(null);
+    setHeader(null);
 
     if (archiveDate && archiveHour !== '') {
-      // Use noon UTC so the date is unambiguous across timezones
-      fetchDay(archiveDate + 'T12:00:00.000Z')
-        .then(all => {
-          all.sort((a, b) => b.ID - a.ID);
+      fetchPlaylist(archiveDate + 'T12:00:00.000Z')
+        .then(({ items: all, header: hdr }) => {
+          all.sort((a, b) => a.ID - b.ID);
           const h = parseInt(archiveHour);
-          setItems(all.filter(t => getBrusselsHour(t.insert_ts) === h));
+          setItems(all.filter(t => tsDate(t.insert_ts) === archiveDate && tsHour(t.insert_ts) === h));
+          setHeader(hdr);
           setLoading(false);
         })
         .catch(e => { setError(e.message); setLoading(false); });
     } else {
-      fetchDay(dateISO())
-        .then(all => {
-          all.sort((a, b) => b.ID - a.ID);
-          const cutoff = startOfCurrentHour().getTime();
-          setItems(all.filter(t => parseInsertTs(t.insert_ts).getTime() >= cutoff));
+      const today = dateStr();
+      fetchPlaylist(new Date().toISOString())
+        .then(({ items: all }) => {
+          all.sort((a, b) => a.ID - b.ID);
+          const h = currentBrusselsHour();
+          setItems(all.filter(t => tsDate(t.insert_ts) === today && tsHour(t.insert_ts) === h));
           setLoading(false);
         })
         .catch(e => { setError(e.message); setLoading(false); });
     }
   }, [archiveDate, archiveHour]);
 
-  return { items, loading, error };
+  return { items, header, loading, error };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -93,7 +81,7 @@ function Playlist({ setRoute, nowPlaying }) {
   const { track }                     = nowPlaying;
 
   const isArchive = archiveDate && archiveHour !== '';
-  const { items, loading, error } = usePlaylist(
+  const { items, header, loading, error } = usePlaylist(
     isArchive ? archiveDate : '',
     isArchive ? archiveHour : '',
   );
@@ -111,6 +99,10 @@ function Playlist({ setRoute, nowPlaying }) {
 
   const hourLabel = h => String(h).padStart(2, '0') + ':00';
 
+  const showInfo = isArchive && header
+    ? `${header.showname} · ${header.startClock}–${header.endClock}`
+    : null;
+
   return (
     <>
       <section data-screen-label="03 Playlist — Header">
@@ -118,7 +110,7 @@ function Playlist({ setRoute, nowPlaying }) {
           <div>
             <div className="crumb">
               {isArchive
-                ? `/ Playlist · archief · ${archiveDate} · ${archiveHour}u`
+                ? `/ Playlist · archief · ${archiveDate} · ${hourLabel(archiveHour)}`
                 : `/ Playlist · live update · ${dateStr()}`}
             </div>
             <h1>
@@ -134,9 +126,9 @@ function Playlist({ setRoute, nowPlaying }) {
             {isArchive ? '// Archief' : '// Historie'}<br/>
             <b>{loading ? '…' : `${items.length} tracks`}</b>
             <span style={{display:'block', marginTop:14, color:'var(--mute)'}}>
-              {isArchive
+              {showInfo ?? (isArchive
                 ? `${archiveDate} · ${hourLabel(archiveHour)}–${String(archiveHour).padStart(2,'0')}:59`
-                : 'Live API · websocket'}
+                : 'Live API · websocket')}
             </span>
           </div>
         </div>
@@ -205,6 +197,20 @@ function Playlist({ setRoute, nowPlaying }) {
           </div>
         </div>
 
+        {/* Show banner — archive only */}
+        {isArchive && header && (
+          <div style={{
+            padding: '12px 16px',
+            borderBottom: '1px solid var(--rule)',
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase',
+            color: 'var(--mute)',
+          }}>
+            <span style={{color:'var(--ink)', fontWeight:700}}>{header.showname}</span>
+            {' · '}{header.datum} · {header.startClock}–{header.endClock}
+          </div>
+        )}
+
         {/* TABLE ─────────── */}
         {loading && (
           <div style={{padding:'48px 0', textAlign:'center', color:'var(--mute)'}}>
@@ -226,7 +232,7 @@ function Playlist({ setRoute, nowPlaying }) {
             </div>
             {visible.map((t, i) => {
               const { artist, title } = parseSong(t.song);
-              const isNow = i === 0 && !q && !isArchive;
+              const isNow = i === visible.length - 1 && !q && !isArchive;
               const defaultArt = 'https://can.radioscorpio.be/2016/03/cd.png';
               const art = t.imageurl && t.imageurl !== defaultArt ? t.imageurl : null;
               return (
