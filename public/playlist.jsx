@@ -41,7 +41,16 @@ function fetchDay(isoDate) {
   }).then(r => r.json()).then(j => j.playlistitems ?? []);
 }
 
-function usePlaylist() {
+function getBrusselsHour(ts) {
+  const parts = new Intl.DateTimeFormat('nl-BE', {
+    timeZone: 'Europe/Brussels',
+    hour: 'numeric',
+    hour12: false,
+  }).formatToParts(parseInsertTs(ts));
+  return parseInt(parts.find(p => p.type === 'hour').value);
+}
+
+function usePlaylist(archiveDate, archiveHour) {
   const [items, setItems]     = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError]     = React.useState(null);
@@ -50,15 +59,27 @@ function usePlaylist() {
     setLoading(true);
     setError(null);
 
-    fetchDay(dateISO())
-      .then(all => {
-        all.sort((a, b) => b.ID - a.ID);
-        const cutoff = startOfCurrentHour().getTime();
-        setItems(all.filter(t => parseInsertTs(t.insert_ts).getTime() >= cutoff));
-        setLoading(false);
-      })
-      .catch(e => { setError(e.message); setLoading(false); });
-  }, []);
+    if (archiveDate && archiveHour !== '') {
+      // Use noon UTC so the date is unambiguous across timezones
+      fetchDay(archiveDate + 'T12:00:00.000Z')
+        .then(all => {
+          all.sort((a, b) => b.ID - a.ID);
+          const h = parseInt(archiveHour);
+          setItems(all.filter(t => getBrusselsHour(t.insert_ts) === h));
+          setLoading(false);
+        })
+        .catch(e => { setError(e.message); setLoading(false); });
+    } else {
+      fetchDay(dateISO())
+        .then(all => {
+          all.sort((a, b) => b.ID - a.ID);
+          const cutoff = startOfCurrentHour().getTime();
+          setItems(all.filter(t => parseInsertTs(t.insert_ts).getTime() >= cutoff));
+          setLoading(false);
+        })
+        .catch(e => { setError(e.message); setLoading(false); });
+    }
+  }, [archiveDate, archiveHour]);
 
   return { items, loading, error };
 }
@@ -66,9 +87,16 @@ function usePlaylist() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function Playlist({ setRoute, nowPlaying }) {
-  const [q, setQ]     = React.useState('');
-  const { track }     = nowPlaying;
-  const { items, loading, error } = usePlaylist();
+  const [q, setQ]                     = React.useState('');
+  const [archiveDate, setArchiveDate] = React.useState('');
+  const [archiveHour, setArchiveHour] = React.useState('');
+  const { track }                     = nowPlaying;
+
+  const isArchive = archiveDate && archiveHour !== '';
+  const { items, loading, error } = usePlaylist(
+    isArchive ? archiveDate : '',
+    isArchive ? archiveHour : '',
+  );
 
   const nowParsed = track?.title ? parseSong(track.title) : null;
 
@@ -79,52 +107,68 @@ function Playlist({ setRoute, nowPlaying }) {
     return artist.toLowerCase().includes(s) || title.toLowerCase().includes(s);
   });
 
+  function clearArchive() { setArchiveDate(''); setArchiveHour(''); }
+
+  const hourLabel = h => String(h).padStart(2, '0') + ':00';
+
   return (
     <>
       <section data-screen-label="03 Playlist — Header">
         <div className="page-hd">
           <div>
-            <div className="crumb">/ Playlist · live update · {dateStr()}</div>
+            <div className="crumb">
+              {isArchive
+                ? `/ Playlist · archief · ${archiveDate} · ${archiveHour}u`
+                : `/ Playlist · live update · ${dateStr()}`}
+            </div>
             <h1>
               Wat draaide<br/>
-              <span style={{color:'var(--mute)'}}>er net?</span>
+              <span style={{color:'var(--mute)'}}>
+                {isArchive
+                  ? `op ${archiveDate} · ${hourLabel(archiveHour)}?`
+                  : 'er net?'}
+              </span>
             </h1>
           </div>
           <div className="aside">
-            // Historie<br/>
+            {isArchive ? '// Archief' : '// Historie'}<br/>
             <b>{loading ? '…' : `${items.length} tracks`}</b>
             <span style={{display:'block', marginTop:14, color:'var(--mute)'}}>
-              Live API · websocket
+              {isArchive
+                ? `${archiveDate} · ${hourLabel(archiveHour)}–${String(archiveHour).padStart(2,'0')}:59`
+                : 'Live API · websocket'}
             </span>
           </div>
         </div>
       </section>
 
-      {/* NOW PLAYING ─────────────────── */}
-      <div data-screen-label="03 Playlist — Now playing">
-        <div className="now-big" style={{maxWidth:1440, margin:'0 auto'}}>
-          <div className="cover">
-            {track?.image
-              ? <img src={track.image} alt={track.title}
-                     style={{width:'100%', height:'100%', objectFit:'cover'}}/>
-              : <span className="ph">[ ALBUM ART ]</span>
-            }
-          </div>
-          <div className="info">
-            <div>
-              <div className="lbl">
-                <span className="dot pulse" style={{background:'var(--ink)', marginRight:8}}/>
-                Nu draait
-              </div>
-              <div className="artist">{nowParsed?.artist ?? '—'}</div>
-              <div className="title">{nowParsed?.title  ?? '—'}</div>
+      {/* NOW PLAYING — hidden in archive mode */}
+      {!isArchive && (
+        <div data-screen-label="03 Playlist — Now playing">
+          <div className="now-big" style={{maxWidth:1440, margin:'0 auto'}}>
+            <div className="cover">
+              {track?.image
+                ? <img src={track.image} alt={track.title}
+                       style={{width:'100%', height:'100%', objectFit:'cover'}}/>
+                : <span className="ph">[ ALBUM ART ]</span>
+              }
             </div>
-            <div className="row">
-              <span style={{color:'var(--mute)'}}>Radio Scorpio 106 FM</span>
+            <div className="info">
+              <div>
+                <div className="lbl">
+                  <span className="dot pulse" style={{background:'var(--ink)', marginRight:8}}/>
+                  Nu draait
+                </div>
+                <div className="artist">{nowParsed?.artist ?? '—'}</div>
+                <div className="title">{nowParsed?.title  ?? '—'}</div>
+              </div>
+              <div className="row">
+                <span style={{color:'var(--mute)'}}>Radio Scorpio 106 FM</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       <main className="shell" data-screen-label="03 Playlist — History" style={{paddingTop:0}}>
 
@@ -137,6 +181,27 @@ function Playlist({ setRoute, nowPlaying }) {
               value={q}
               onChange={e => setQ(e.target.value)}
             />
+          </div>
+          <div className="filter-grp">
+            <input
+              type="date"
+              value={archiveDate}
+              max={dateStr()}
+              onChange={e => { setArchiveDate(e.target.value); setArchiveHour(''); }}
+            />
+            <select
+              value={archiveHour}
+              disabled={!archiveDate}
+              onChange={e => setArchiveHour(e.target.value)}
+            >
+              <option value="">uur</option>
+              {Array.from({length: 24}, (_, h) => (
+                <option key={h} value={String(h)}>{hourLabel(h)}</option>
+              ))}
+            </select>
+            {isArchive && (
+              <button onClick={clearArchive}>× live</button>
+            )}
           </div>
         </div>
 
@@ -161,7 +226,7 @@ function Playlist({ setRoute, nowPlaying }) {
             </div>
             {visible.map((t, i) => {
               const { artist, title } = parseSong(t.song);
-              const isNow = i === 0 && !q;
+              const isNow = i === 0 && !q && !isArchive;
               const defaultArt = 'https://can.radioscorpio.be/2016/03/cd.png';
               const art = t.imageurl && t.imageurl !== defaultArt ? t.imageurl : null;
               return (

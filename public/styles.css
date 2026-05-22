@@ -795,6 +795,19 @@ img { display: block; max-width: 100%; }
 }
 .pl-tools .filter-grp button:last-child { border-right: 0; }
 .pl-tools .filter-grp button.is-active { background: var(--ink); color: var(--accent); }
+.pl-tools .filter-grp input[type="date"],
+.pl-tools .filter-grp select {
+  padding: 10px 14px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  font-weight: 600;
+  border-right: var(--hair) solid var(--ink);
+  background: transparent; color: var(--ink);
+  appearance: none; -webkit-appearance: none;
+  cursor: pointer;
+}
+.pl-tools .filter-grp input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; }
+.pl-tools .filter-grp select:disabled { opacity: 0.35; cursor: default; }
 
 /* NOW PLAYING BIG ---------------------------------------------------- */
 
