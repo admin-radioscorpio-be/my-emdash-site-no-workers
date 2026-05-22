@@ -2,12 +2,13 @@
 
 const PLAYLIST_API = 'https://public.radioscorpio.be/api/playlist/list';
 
+const RANGE_MS = { '1u': 3600e3, '6u': 6 * 3600e3, '24u': 24 * 3600e3, 'week': 7 * 24 * 3600e3 };
 const RANGE_DAYS = { '1u': 1, '6u': 1, '24u': 2, 'week': 7 };
 
 function dateISO(daysAgo = 0) {
   const d = new Date();
   d.setDate(d.getDate() - daysAgo);
-  if (daysAgo > 0) d.setHours(23, 59, 59, 999); // end of that day
+  if (daysAgo > 0) d.setHours(23, 59, 59, 999);
   return d.toISOString();
 }
 
@@ -15,8 +16,15 @@ function dateStr(daysAgo = 0) {
   return dateISO(daysAgo).slice(0, 10);
 }
 
-function fmtTime(unixTs) {
-  return new Date(unixTs * 1000).toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' });
+// insert_ts is "2026-05-22 00:00:15" in UTC
+function parseInsertTs(ts) {
+  return new Date(ts.replace(' ', 'T') + 'Z');
+}
+
+function fmtTime(insert_ts) {
+  return parseInsertTs(insert_ts).toLocaleTimeString('nl-BE', {
+    hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Brussels',
+  });
 }
 
 function parseSong(song) {
@@ -49,7 +57,8 @@ function usePlaylist(range) {
       .then(results => {
         const all = results.flat();
         all.sort((a, b) => b.ID - a.ID);
-        setItems(all);
+        const cutoff = Date.now() - RANGE_MS[range];
+        setItems(all.filter(t => parseInsertTs(t.insert_ts).getTime() >= cutoff));
         setLoading(false);
       })
       .catch(e => { setError(e.message); setLoading(false); });
@@ -172,7 +181,7 @@ function Playlist({ setRoute, nowPlaying }) {
               return (
                 <div key={t.ID} className={"pl-row" + (isNow ? ' now' : '')}>
                   <span className="num">{String(i + 1).padStart(3, '0')}</span>
-                  <span className="time">{fmtTime(t.startTime)}</span>
+                  <span className="time">{fmtTime(t.insert_ts)}</span>
                   <div className="cover">
                     {art
                       ? <img src={art} alt={artist}
