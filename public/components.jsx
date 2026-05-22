@@ -39,7 +39,7 @@ function TopNav({ route, setRoute }) {
         </nav>
         <div className="util">
           <button className="ic" aria-label="Zoeken"><Ic.search/></button>
-          <button className="ic" aria-label="Inloggen"><Ic.user/></button>
+          <a href="/_emdash/api/auth/oauth/google" className="ic" aria-label="Inloggen"><Ic.user/></a>
         </div>
       </div>
     </header>
