@@ -2,7 +2,7 @@
 
 const PLAYLIST_API = 'https://public.radioscorpio.be/api/playlist/list';
 
-const RANGE_SECONDS = { '1u': 3600, '6u': 21600, '24u': 86400, 'week': 7 * 86400 };
+const RANGE_DAYS = { '1u': 1, '6u': 1, '24u': 2, 'week': 7 };
 
 function dateStr(daysAgo = 0) {
   const d = new Date();
@@ -37,16 +37,14 @@ function usePlaylist(range) {
     setLoading(true);
     setError(null);
 
-    const days = range === 'week' ? 7 : range === '24u' ? 2 : 1;
+    const days = RANGE_DAYS[range] ?? 1;
     const dates = Array.from({ length: days }, (_, i) => dateStr(i));
 
     Promise.all(dates.map(fetchDay))
       .then(results => {
         const all = results.flat();
-        all.sort((a, b) => b.startTime - a.startTime);
-
-        const cutoff = Date.now() / 1000 - RANGE_SECONDS[range];
-        setItems(all.filter(t => t.startTime >= cutoff));
+        all.sort((a, b) => b.ID - a.ID);
+        setItems(all);
         setLoading(false);
       })
       .catch(e => { setError(e.message); setLoading(false); });
