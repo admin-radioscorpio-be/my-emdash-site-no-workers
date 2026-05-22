@@ -74,7 +74,55 @@ function Ticker() {
 }
 
 // ─── Persistent bottom player ─────────────────────────────────────────
-const STREAM_URL = 'https://stream.radioscorpio.be/stream';
+const STREAM_URL  = 'https://stream.radioscorpio.be/stream';
+const WS_URL      = 'wss://nowplaying.radioscorpio.be/ws';
+
+function useNowPlaying() {
+  const [track, setTrack]   = React.useState(null);   // { title, image }
+  const [show, setShow]     = React.useState(null);   // { name, start, end }
+  const [upcoming, setUpcoming] = React.useState(null); // { name, start }
+  const wsRef = React.useRef(null);
+
+  React.useEffect(() => {
+    let destroyed = false;
+    let retryTimer = null;
+
+    function connect() {
+      if (destroyed) return;
+      const ws = new WebSocket(WS_URL);
+      wsRef.current = ws;
+
+      ws.onmessage = (e) => {
+        let msg;
+        try { msg = JSON.parse(e.data); } catch { return; }
+
+        if (msg.type === 'track_change') {
+          const s = msg.data?.stream;
+          if (s?.title) setTrack({ title: s.title, image: s.image || null });
+        } else if (msg.type === 'schedule_update') {
+          const cur = msg.data?.currentshow;
+          const nxt = msg.data?.upcomingshow;
+          if (cur) setShow({ name: cur.showName, start: cur.startClock, end: cur.endClock });
+          if (nxt) setUpcoming({ name: nxt.showName, start: nxt.startClock });
+        }
+      };
+
+      ws.onclose = () => {
+        if (!destroyed) retryTimer = setTimeout(connect, 5000);
+      };
+      ws.onerror = () => ws.close();
+    }
+
+    connect();
+    return () => {
+      destroyed = true;
+      clearTimeout(retryTimer);
+      wsRef.current?.close();
+    };
+  }, []);
+
+  return { track, show, upcoming };
+}
 
 function Player({ playing, setPlaying, accent }) {
   const [vol, setVol] = React.useState(70);
@@ -83,6 +131,7 @@ function Player({ playing, setPlaying, accent }) {
   );
   const [progress, setProgress] = React.useState(0.42);
   const audioRef = React.useRef(null);
+  const { track, show, upcoming } = useNowPlaying();
 
   // Create the audio element once
   React.useEffect(() => {
@@ -116,16 +165,28 @@ function Player({ playing, setPlaying, accent }) {
 
   const activeBar = Math.floor(progress * bars.length);
 
+  const trackLabel = track?.title  ?? '—';
+  const showLabel  = show
+    ? `Nu: ${show.name} · ${show.start}–${show.end}`
+    : 'Nu: —';
+  const nextLabel  = upcoming
+    ? <span>Straks <b>{upcoming.start} {upcoming.name}</b></span>
+    : <span>Straks —</span>;
+
   return (
     <footer className="player">
       <div className="left">
         <button className="play" onClick={() => setPlaying(p => !p)} aria-label={playing ? 'Pauze' : 'Speel'}>
           {playing ? <Ic.pause cls="lg"/> : <Ic.play cls="lg"/>}
         </button>
+        {track?.image && (
+          <img src={track.image} alt="" className="track-art"
+               style={{width:40,height:40,borderRadius:3,objectFit:'cover',flexShrink:0}}/>
+        )}
         <div>
           <div className="live"><span className="dot pulse"/> Live · 106 FM</div>
-          <div className="track">Dry Cleaning — Hit My Head All Day</div>
-          <div className="show">Nu: Non-stop · 23:00–00:00</div>
+          <div className="track">{trackLabel}</div>
+          <div className="show">{showLabel}</div>
         </div>
       </div>
       <div className="center">
@@ -138,9 +199,7 @@ function Player({ playing, setPlaying, accent }) {
         </div>
       </div>
       <div className="right">
-        <div className="nextup">
-          Straks <b>00:00 Vinylkroniek</b>
-        </div>
+        <div className="nextup">{nextLabel}</div>
         <div className="vol">
           <Ic.vol/>
           <input type="range" min="0" max="100" value={vol} onChange={e => setVol(+e.target.value)} />
