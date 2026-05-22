@@ -12,6 +12,7 @@ function App() {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const [route, setRoute] = React.useState('home');
   const [playing, setPlaying] = React.useState(false);
+  const nowPlaying = useNowPlaying();
 
   // expose tokens via CSS vars
   const style = {
@@ -32,12 +33,12 @@ function App() {
       <Ticker/>
 
       {Page
-        ? <Page setRoute={setRoute} playing={playing} setPlaying={setPlaying}/>
+        ? <Page setRoute={setRoute} playing={playing} setPlaying={setPlaying} nowPlaying={nowPlaying}/>
         : <Stub route={route} setRoute={setRoute}/>}
 
       <Footer/>
 
-      <Player playing={playing} setPlaying={setPlaying} accent={t.accent}/>
+      <Player playing={playing} setPlaying={setPlaying} accent={t.accent} nowPlaying={nowPlaying}/>
 
       <TweaksPanel title="TWEAKS">
         <TweakSection label="Accent kleur"/>

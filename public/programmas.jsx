@@ -100,7 +100,7 @@ function useSchedule() {
 
 function Programmas({ setRoute }) {
   const [genre, setGenre] = React.useState('Alles');
-  const [view, setView]   = React.useState('grid');
+  const [view, setView]   = React.useState('lijst');
   const { schedule, loading, error } = useSchedule();
 
   if (loading) return (

@@ -124,14 +124,14 @@ function useNowPlaying() {
   return { track, show, upcoming };
 }
 
-function Player({ playing, setPlaying, accent }) {
+function Player({ playing, setPlaying, accent, nowPlaying }) {
   const [vol, setVol] = React.useState(70);
   const [bars] = React.useState(() =>
     Array.from({length: 64}, () => 0.2 + Math.random() * 0.8)
   );
   const [progress, setProgress] = React.useState(0.42);
   const audioRef = React.useRef(null);
-  const { track, show, upcoming } = useNowPlaying();
+  const { track, show, upcoming } = nowPlaying;
 
   // Create the audio element once
   React.useEffect(() => {
@@ -277,4 +277,4 @@ function Footer() {
   );
 }
 
-Object.assign(window, { Ic, TopNav, Ticker, Player, SectHd, Footer });
+Object.assign(window, { Ic, TopNav, Ticker, Player, SectHd, Footer, useNowPlaying });

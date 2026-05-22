@@ -1,6 +1,7 @@
 // home.jsx — Radio Scorpio homepage
 
-function Home({ setRoute, playing, setPlaying }) {
+function Home({ setRoute, playing, setPlaying, nowPlaying }) {
+  const { show, upcoming } = nowPlaying;
   return (
     <>
       {/* HERO ─────────────────────────────────────────────── */}
@@ -55,22 +56,21 @@ function Home({ setRoute, playing, setPlaying }) {
       <section className="onair" data-screen-label="01 Home — On air strip">
         <div className="live-cell">
           <div className="lbl">// Nu op antenne</div>
-          <div className="v">23:00 — 00:00</div>
+          <div className="v">
+            {show ? `${show.start} — ${show.end}` : '—'}
+          </div>
         </div>
         <div>
           <div className="lbl">Programma</div>
-          <div className="v">{ON_AIR.current.name}</div>
-          <div className="sub">{ON_AIR.current.desc}</div>
+          <div className="v">{show?.name ?? '—'}</div>
         </div>
         <div>
-          <div className="lbl">Straks · 00:00</div>
-          <div className="v">{ON_AIR.next.name}</div>
-          <div className="sub">{ON_AIR.next.dj} · {ON_AIR.next.genre || 'Crate Digging'}</div>
+          <div className="lbl">{upcoming ? `Straks · ${upcoming.start}` : 'Straks'}</div>
+          <div className="v">{upcoming?.name ?? '—'}</div>
         </div>
         <div>
-          <div className="lbl">Daarna · 07:00</div>
-          <div className="v">{ON_AIR.later.name}</div>
-          <div className="sub">{ON_AIR.later.dj} · Ochtendprogramma</div>
+          <div className="lbl">Daarna</div>
+          <div className="v" style={{color:'var(--mute)'}}>—</div>
         </div>
       </section>
 
