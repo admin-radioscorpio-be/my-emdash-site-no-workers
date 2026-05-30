@@ -12,3 +12,6 @@ data.db
 .dev.vars.*
 .wrangler/*
 *.code-workspace
+design_files/*
+.DS_Store/*
+.DS_Store
