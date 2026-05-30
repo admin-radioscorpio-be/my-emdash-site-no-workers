@@ -1,3 +1,45 @@
+diff --git a/node_modules/emdash/dist/astro/routes/api/auth/oauth/_provider_.mjs b/node_modules/emdash/dist/astro/routes/api/auth/oauth/_provider_.mjs
+index d585601..1d12ed5 100644
+--- a/node_modules/emdash/dist/astro/routes/api/auth/oauth/_provider_.mjs
++++ b/node_modules/emdash/dist/astro/routes/api/auth/oauth/_provider_.mjs
+@@ -1,6 +1,7 @@
+ import { n as getPublicOrigin } from "../../../../../public-url-CseXl9Fv.mjs";
+ import { t as createOAuthStateStore } from "../../../../../oauth-state-store-DpsZViTu.mjs";
+ import { createAuthorizationUrl } from "@emdash-cms/auth";
++import { env as cfEnv } from "cloudflare:workers";
+ 
+ //#region src/astro/routes/api/auth/oauth/[provider].ts
+ const prerender = false;
+@@ -42,7 +43,7 @@ const GET = async ({ params, request, locals, redirect }) => {
+ 	if (!emdash?.db) return redirect(`${errorRedirectBase}?error=server_error&message=${encodeURIComponent("Database not configured")}`);
+ 	try {
+ 		const url = new URL(request.url);
+-		const providers = getOAuthConfig(locals.runtime?.env ?? import.meta.env);
++		const providers = getOAuthConfig(cfEnv ?? import.meta.env);
+ 		if (!providers[provider]) return redirect(`${errorRedirectBase}?error=provider_not_configured&message=${encodeURIComponent(`OAuth provider ${provider} is not configured. Set either EMDASH_OAUTH_${provider.toUpperCase()}_CLIENT_ID and EMDASH_OAUTH_${provider.toUpperCase()}_CLIENT_SECRET, or ${provider.toUpperCase()}_CLIENT_ID and ${provider.toUpperCase()}_CLIENT_SECRET.`)}`);
+ 		const { url: authUrl } = await createAuthorizationUrl({
+ 			baseUrl: `${getPublicOrigin(url, emdash?.config)}/_emdash`,
+diff --git a/node_modules/emdash/dist/astro/routes/api/auth/oauth/_provider_/callback.mjs b/node_modules/emdash/dist/astro/routes/api/auth/oauth/_provider_/callback.mjs
+index 76babb9..a8e0dfc 100644
+--- a/node_modules/emdash/dist/astro/routes/api/auth/oauth/_provider_/callback.mjs
++++ b/node_modules/emdash/dist/astro/routes/api/auth/oauth/_provider_/callback.mjs
+@@ -4,6 +4,7 @@ import { t as finalizeSetup } from "../../../../../../setup-complete-C6ZCLhKo.mj
+ import { t as createOAuthStateStore } from "../../../../../../oauth-state-store-DpsZViTu.mjs";
+ import { createKyselyAdapter } from "@emdash-cms/auth/adapters/kysely";
+ import { OAuthError, Role, handleOAuthCallback } from "@emdash-cms/auth";
++import { env as cfEnv } from "cloudflare:workers";
+ 
+ //#region src/astro/routes/api/auth/oauth/[provider]/callback.ts
+ const prerender = false;
+@@ -53,7 +54,7 @@ const GET = async ({ params, request, locals, session, redirect }) => {
+ 	}
+ 	if (!code || !state) return redirect(`/_emdash/admin/login?error=invalid_callback&message=${encodeURIComponent("Missing code or state parameter")}`);
+ 	try {
+-		const providers = getOAuthConfig(locals.runtime?.env ?? import.meta.env);
++		const providers = getOAuthConfig(cfEnv ?? import.meta.env);
+ 		if (!providers[provider]) return redirect(`/_emdash/admin/login?error=provider_not_configured&message=${encodeURIComponent(`OAuth provider ${provider} is not configured`)}`);
+ 		const adapter = createKyselyAdapter(emdash.db);
+ 		const stateStore = createOAuthStateStore(emdash.db);
 diff --git a/node_modules/emdash/src/astro/routes/api/auth/oauth/[provider].ts b/node_modules/emdash/src/astro/routes/api/auth/oauth/[provider].ts
 index 0d7d8fa..f46858a 100644
 --- a/node_modules/emdash/src/astro/routes/api/auth/oauth/[provider].ts
