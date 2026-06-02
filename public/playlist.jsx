@@ -23,6 +23,12 @@ function parseSong(song) {
   return { artist: song.slice(0, idx).trim(), title: song.slice(idx + 3).trim() };
 }
 
+// API song field has a number prefix ("01. Artist - Title"); strip it before comparing with WS title
+function songMatchesTrack(song, track) {
+  if (!track?.title) return false;
+  return song.replace(/^\d+\.\s+/, '') === track.title;
+}
+
 // Convert a selected Brussels hour on a date to the correct UTC ISO string for the API
 function brusselsHourToUTC(dateStr, hour) {
   const approx = new Date(`${dateStr}T${String(hour).padStart(2, '0')}:00:00Z`);
@@ -43,7 +49,7 @@ function fetchPlaylist(startlistdate) {
   }));
 }
 
-function usePlaylist(archiveDate, archiveHour) {
+function usePlaylist(archiveDate, archiveHour, liveTrackTitle) {
   const [items, setItems]     = React.useState([]);
   const [header, setHeader]   = React.useState(null);
   const [loading, setLoading] = React.useState(true);
@@ -69,6 +75,17 @@ function usePlaylist(archiveDate, archiveHour) {
       .catch(e => { setError(e.message); setLoading(false); });
   }, [archiveDate, archiveHour]);
 
+  // Silent background refresh in live mode when WS fires a new track
+  React.useEffect(() => {
+    if (!liveTrackTitle) return;
+    fetchPlaylist(new Date().toISOString())
+      .then(({ items: all }) => {
+        all.sort((a, b) => b.ID - a.ID);
+        setItems(all);
+      })
+      .catch(() => {});
+  }, [liveTrackTitle]);
+
   return { items, header, loading, error };
 }
 
@@ -84,6 +101,7 @@ function Playlist({ setRoute, nowPlaying }) {
   const { items, header, loading, error } = usePlaylist(
     isArchive ? archiveDate : '',
     isArchive ? archiveHour : '',
+    isArchive ? null : track?.title,
   );
 
   const nowParsed = track?.title ? parseSong(track.title) : null;
@@ -230,7 +248,7 @@ function Playlist({ setRoute, nowPlaying }) {
             </div>
             {visible.map((t, i) => {
               const { artist, title } = parseSong(t.song);
-              const isNow = i === 0 && !q && !isArchive;
+              const isNow = !q && !isArchive && songMatchesTrack(t.song, track);
               const defaultArt = 'https://can.radioscorpio.be/2016/03/cd.png';
               const art = t.imageurl && t.imageurl !== defaultArt ? t.imageurl : null;
               return (

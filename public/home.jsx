@@ -40,8 +40,8 @@ function Home({ setRoute, playing, setPlaying, nowPlaying }) {
             </div>
           </div>
           <div style={{display:'flex', flexDirection:'column', gap:16, alignItems:'flex-end'}}>
-            <button className="play-cta big" onClick={() => setPlaying(true)}>
-              <span className="ico"><Ic.play cls="lg"/></span>
+            <button className="play-cta big" onClick={() => setPlaying(p => !p)}>
+              <span className="ico">{playing ? <Ic.pause cls="lg"/> : <Ic.play cls="lg"/>}</span>
               Luister live
             </button>
             <div className="eyebrow" style={{color:'rgba(244,242,236,0.55)', textAlign:'right'}}>
