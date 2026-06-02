@@ -1,5 +1,5 @@
 // playlist.jsx — Now playing + history
-// insert_ts from the API is UTC; display times are converted to Europe/Brussels
+// time from the API is UTC; display times are converted to Europe/Brussels
 
 const PLAYLIST_API = 'https://public.radioscorpio.be/api/playlist/list';
 
@@ -236,7 +236,7 @@ function Playlist({ setRoute, nowPlaying }) {
               return (
                 <div key={t.ID} className={"pl-row" + (isNow ? ' now' : '')}>
                   <span className="num">{String(i + 1).padStart(3, '0')}</span>
-                  <span className="time">{fmtTime(t.insert_ts)}</span>
+                  <span className="time">{fmtTime(t.time)}</span>
                   <div className="cover">
                     {art
                       ? <img src={art} alt={artist}
