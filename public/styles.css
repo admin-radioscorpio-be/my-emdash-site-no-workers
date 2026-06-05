@@ -1112,6 +1112,7 @@ img { display: block; max-width: 100%; }
   grid-template-columns: 280px 1fr 320px;
 }
 .now-big.od-detail::before { content: "OD"; font-size: 420px; right: 40px; }
+.now-big.od-detail .cover { aspect-ratio: unset; }
 .od-detail .info { padding-top: 30px; padding-bottom: 30px; }
 .od-detail-desc {
   font-size: 15px; line-height: 1.5; max-width: 520px;
