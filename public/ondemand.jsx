@@ -265,6 +265,17 @@ function ODEpisodes({ show, fav, onOpen, onBack }) {
   const sentinel              = React.useRef(null);
   const loadMoreRef           = React.useRef(loadMore);
 
+  // Per-season descending episode numbers (oldest = #1, newest = #N)
+  const epNums = React.useMemo(() => {
+    const totals = {};
+    episodes.forEach(ep => { totals[ep.season] = (totals[ep.season] || 0) + 1; });
+    const counters = {};
+    return episodes.map(ep => {
+      counters[ep.season] = (counters[ep.season] || 0) + 1;
+      return totals[ep.season] - counters[ep.season] + 1;
+    });
+  }, [episodes]);
+
   React.useEffect(() => { loadMoreRef.current = loadMore; });
   React.useEffect(() => { setSeason('Alles'); }, [show.showid]);
 
@@ -323,7 +334,7 @@ function ODEpisodes({ show, fav, onOpen, onBack }) {
             <div className="od-ep-row" key={ep.id} onClick={() => onOpen(ep)}>
               <span className="od-ep-date">{fmtOdDate(ep.episodeDate)}</span>
               <span className="od-ep-season">{ep.season}</span>
-              <span className="od-ep-num">{String(i + 1).padStart(2, '0')}</span>
+              <span className="od-ep-num">{String(epNums[i]).padStart(2, '0')}</span>
               <div className="od-ep-title">
                 <div className="t">{ep.title}</div>
                 <div className="s">{ep.description ?? ''}</div>
