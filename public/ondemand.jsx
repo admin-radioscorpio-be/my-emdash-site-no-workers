@@ -202,6 +202,7 @@ function ODShows({ shows, loading, error, tag, favOnly, fav, onOpen }) {
   let filtered = shows;
   if (tag && tag !== 'Alles') filtered = filtered.filter(s => s.tags?.includes(tag));
   if (favOnly) filtered = filtered.filter(s => fav.isFav('show', s.showid));
+  filtered = [...filtered].sort((a, b) => (b.lastEpisodeDate ?? 0) - (a.lastEpisodeDate ?? 0));
 
   if (loading) return (
     <div className="od-empty">
