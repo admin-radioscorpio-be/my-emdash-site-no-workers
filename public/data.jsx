@@ -46,4 +46,136 @@ const ON_AIR = {
   later:   { name: 'Verse Vis',        time: '07:00–09:00', dj: 'Tim Coenen',    desc: 'Ochtendprogramma' },
 };
 
-Object.assign(window, { PROGRAMS, TRACKS, DAYS, SLOTS, GENRES, ON_AIR });
+// ─── SCORPIO OD — on-demand archive ───────────────────────────────────
+// University-calendar seasons: Oct YY → Sep ZZ. Newest first.
+const OD_SEASONS = ['25–26', '24–25', '23–24', '22–23'];
+
+// Track pool used to fabricate per-episode tracklists.
+const OD_POOL = [
+  ['Dry Cleaning',            'Hit My Head All Day',     'New Long Leg',          '3:47'],
+  ['Slowdive',                'Kisses',                  'Everything Is Alive',   '4:12'],
+  ['Black Country, New Road', 'Turbines/Pigs',           'Forever Howlong',       '5:08'],
+  ['Mdou Moctar',             'Funeral For Justice',     'Funeral For Justice',   '3:54'],
+  ['Beth Gibbons',            'Floating On A Moment',    'Lives Outgrown',        '4:31'],
+  ['Jessica Pratt',           'Life Is',                 'Here In The Pitch',     '3:18'],
+  ['Nilüfer Yanya',           'Like I Say (I runaway)',  'My Method Actor',       '3:42'],
+  ['Squid',                   'Crispy Skin',             'O Monolith',            '5:01'],
+  ['Kim Gordon',              'Bye Bye',                 'The Collective',        '3:24'],
+  ['Mount Kimbie',            'Empty And Silent',        'The Sunset Violent',    '4:55'],
+  ['Big|Brave',               'I Felt A Funeral',        'A Chaos Of Flowers',    '6:22'],
+  ['Tirzah',                  'Promises',                'trip9love…???',         '3:13'],
+  ['cktrl',                   'Robyn',                   'Robyn',                 '4:08'],
+  ['King Krule',              'Pillars Of Salt',         'Space Heavy',           '4:19'],
+  ['Cindy Lee',               'Diamond Jubilee',         'Diamond Jubilee',       '5:44'],
+  ['Wu-Lu',                   'South',                   'Loggerhead',            '3:51'],
+  ['Caroline Polachek',       'Welcome To My Island',    'Desire, I Want To…',    '3:59'],
+  ['Yves Tumor',              'Lovely Sewer',            'Praise A Lord…',        '3:31'],
+  ['Sault',                   'Wildfires',               'Untitled (Black Is)',   '3:17'],
+  ['Floating Points',         'Birth4000',               'Cascade',               '5:36'],
+  ['Aphex Twin',              'Avril 14th',              'Drukqs',                '2:04'],
+  ['Tom Misch',               'Movie',                   'Geography',             '4:46'],
+  ['Khruangbin',              'Maria También',           'Con Todo El Mundo',     '3:52'],
+  ['Sons Of Kemet',           'My Queen Is Ada Eastman', 'Your Queen Is A Reptile','5:55'],
+  ['Charlotte Adigéry',       'Esperanto',               'Topical Dancer',        '3:38'],
+  ['Stromae',                 'Fils De Joie',            'Multitude',             '3:41'],
+  ['Meskerem Mees',           'Joe',                     'Julius',                '3:22'],
+  ['Brutus',                  'Liar',                    'Unison Life',           '4:27'],
+];
+
+// Per-show archive config keyed to existing PROGRAMS. `weeksAgo` = how long
+// since the last episode (large = dormant), `count` = episodes in archive.
+const OD_SHOW_CFG = {
+  sessions:   { count: 47, weeksAgo: 1,  themes: ['Live in studio 3', 'Akoestische set', 'Eén take, geen vangnet', 'Onuitgebrachte demo’s', 'Met strijkkwartet'] },
+  beste106:   { count: 38, weeksAgo: 1,  themes: ['De aftelling', 'Top 10 van het jaar', 'Luisteraarsklassiekers', 'Nieuwkomers', 'Heruitgaven'] },
+  nachtdienst:{ count: 52, weeksAgo: 2,  themes: ['Trage muziek voor late uurtjes', 'Drone & ruis', 'Slaapmodus', 'Voor de nachtraven', 'Ambient lang'] },
+  wereldoor:  { count: 41, weeksAgo: 2,  themes: ['Veldopnames uit de Sahel', 'Ritmes van de Balkan', 'Stemmen uit Lissabon', 'Polyfonie', 'Percussie-special'] },
+  razend:     { count: 33, weeksAgo: 1,  themes: ['Twee uur distortion', 'Hardcore-blok', 'Vinyl-only woede', 'Demo-tape special', 'Live in de kelder'] },
+  vinyl:      { count: 60, weeksAgo: 1,  themes: ['Verloren parels', 'Crate digging-editie', 'Tweedehands schatten', 'Eén platenkast', 'B-kanten'] },
+  cultafacts: { count: 44, weeksAgo: 3,  themes: ['Weekoverzicht Leuven', 'Festivalnabeschouwing', 'Boekenrubriek', 'Filmgesprek', 'Agenda special'] },
+  'verse-vis':{ count: 36, weeksAgo: 1,  themes: ['Vers van de pers', 'Releasedag-special', 'Vijf nieuwe namen', 'Demo-oogst', 'Wat blijft hangen'] },
+  stille:     { count: 29, weeksAgo: 2,  themes: ['Late-night jazz', 'Soul in het schemergebied', 'Spiritual jazz', 'Voor de stille uurtjes', 'Pianotrio’s'] },
+  diep:       { count: 31, weeksAgo: 1,  themes: ['Diepe elektronica', 'Dub-techno', 'Te lang gemixt', 'Veld & machine', 'Niet voor de dansvloer'] },
+  kraut:      { count: 22, weeksAgo: 38, themes: ['Motorik', 'Düsseldorf-school', 'Kosmische editie', 'Lange ritten', 'Synth & herhaling'] },
+  achteruit:  { count: 18, weeksAgo: 64, themes: ['Een blik terug', 'Week per week', 'Nostalgie-editie', 'Het muzikale verleden', 'Toen & nu'] },
+};
+
+function odSeasonOf(date) {
+  const y = date.getFullYear(), m = date.getMonth(); // 0-indexed
+  const start = m >= 9 ? y : y - 1; // season starts in October
+  return `${String(start).slice(2)}–${String(start + 1).slice(2)}`;
+}
+function odPad(n) { return String(n).padStart(2, '0'); }
+function odAddMin(hhmm, addMin) {
+  let [h, m] = hhmm.split(':').map(Number);
+  let total = (h * 60 + m + addMin) % (24 * 60);
+  return `${odPad(Math.floor(total / 60))}:${odPad(total % 60)}`;
+}
+function odDurToMin(d) { const [m, s] = d.split(':').map(Number); return m + s / 60; }
+function odToMin(hhmm) { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; }
+function odDurLabel(min) {
+  if (min < 60) return `${min} min`;
+  return `${Math.floor(min / 60)}u${odPad(min % 60)}`;
+}
+
+// Build all OD shows + episodes deterministically (stable across reloads).
+const NOW_REF = new Date('2026-06-05T12:00:00');
+const OD_SHOWS = [];
+const OD_EPISODES = {}; // showId -> [episodes], newest first
+
+PROGRAMS.forEach((p) => {
+  const cfg = OD_SHOW_CFG[p.id];
+  if (!cfg) return;
+  const startTime = p.time.split('–')[0];
+  const endTime = p.time.split('–')[1];
+  let slotMin = (odToMin(endTime) - odToMin(startTime) + 1440) % 1440;
+  if (slotMin === 0) slotMin = 120;
+  const eps = [];
+  for (let i = 0; i < cfg.count; i++) {
+    const d = new Date(NOW_REF);
+    d.setDate(d.getDate() - (cfg.weeksAgo + i) * 7);
+    const num = cfg.count - i;
+    const len = 7 + ((p.id.length + i) % 4);
+    const tracks = [];
+    let cursor = 0;
+    for (let k = 0; k < len; k++) {
+      const t = OD_POOL[(i * 3 + k * 5 + p.name.length) % OD_POOL.length];
+      tracks.push({
+        time: odAddMin(startTime, Math.round(cursor)),
+        artist: t[0], title: t[1], album: t[2], dur: t[3],
+      });
+      cursor += odDurToMin(t[3]) + 0.4;
+    }
+    const durMin = slotMin - (num % 4);
+    eps.push({
+      id: `${p.id}-e${num}`,
+      showId: p.id,
+      num,
+      title: cfg.themes[i % cfg.themes.length],
+      date: `${d.getFullYear()}-${odPad(d.getMonth() + 1)}-${odPad(d.getDate())}`,
+      dateLabel: `${odPad(d.getDate())}.${odPad(d.getMonth() + 1)}.${String(d.getFullYear()).slice(2)}`,
+      season: odSeasonOf(d),
+      duration: odDurLabel(durMin),
+      durationMin: durMin,
+      desc: `${p.name} #${num} — ${cfg.themes[i % cfg.themes.length].toLowerCase()}. Opgenomen op ${odPad(d.getDate())}.${odPad(d.getMonth() + 1)} in studio.`,
+      plays: 120 + ((i * 137 + p.name.length * 31) % 2400),
+      tracks,
+    });
+  }
+  OD_EPISODES[p.id] = eps;
+  const last = eps[0];
+  const seasonsCovered = OD_SEASONS.filter(s => eps.some(e => e.season === s));
+  OD_SHOWS.push({
+    id: p.id,
+    name: p.name,
+    dj: p.dj,
+    genre: p.genre,
+    desc: p.desc,
+    episodeCount: eps.length,
+    lastAired: last.dateLabel,
+    lastAiredDate: last.date,
+    seasons: seasonsCovered,
+    dormant: cfg.weeksAgo > 26,
+  });
+});
+
+Object.assign(window, { PROGRAMS, TRACKS, DAYS, SLOTS, GENRES, ON_AIR, OD_SEASONS, OD_SHOWS, OD_EPISODES });

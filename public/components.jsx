@@ -19,6 +19,7 @@ function TopNav({ route, setRoute }) {
     ['home', 'Home'],
     ['programmas', "Programma's"],
     ['playlist', 'Playlist'],
+    ['ondemand', 'On demand'],
     ['sessions', 'Sessions'],
     ['cultafacts', 'Cultafacts'],
     ['shop', 'Shop'],
@@ -124,7 +125,10 @@ function useNowPlaying() {
   return { track, show, upcoming };
 }
 
-function Player({ playing, setPlaying, accent, nowPlaying, sessionFeed, setSessionFeed }) {
+function Player({ playing, setPlaying, accent, nowPlaying, sessionFeed, setSessionFeed, odNow, onClearOd }) {
+  if (odNow) return <ODPlayer odNow={odNow} playing={playing} setPlaying={setPlaying}
+                              accent={accent} onClearOd={onClearOd}/>;
+
   const [vol, setVol] = React.useState(70);
   const [bars] = React.useState(() =>
     Array.from({length: 64}, () => 0.2 + Math.random() * 0.8)
@@ -283,6 +287,64 @@ function Player({ playing, setPlaying, accent, nowPlaying, sessionFeed, setSessi
   );
 }
 
+// ─── On-demand footer player (Mixcloud-style scrubber) ─────────────────
+function fmtTime(sec) {
+  sec = Math.max(0, Math.floor(sec));
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+function ODPlayer({ odNow, playing, setPlaying, accent, onClearOd }) {
+  const { episode, show } = odNow;
+  const total = episode.durationMin * 60;
+  const [elapsed, setElapsed] = React.useState(0);
+  const [vol, setVol] = React.useState(70);
+
+  React.useEffect(() => { setElapsed(0); }, [episode.id]);
+  React.useEffect(() => {
+    if (!playing) return;
+    const t = setInterval(() => setElapsed(e => Math.min(e + 1, total)), 1000);
+    return () => clearInterval(t);
+  }, [playing, total]);
+
+  const pct = total ? (elapsed / total) * 100 : 0;
+  const seek = (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setElapsed(Math.round(((e.clientX - r.left) / r.width) * total));
+  };
+
+  return (
+    <footer className="player od-player">
+      <div className="left">
+        <button className="play" onClick={() => setPlaying(p => !p)} aria-label={playing ? 'Pauze' : 'Speel'}>
+          {playing ? <Ic.pause cls="lg"/> : <Ic.play cls="lg"/>}
+        </button>
+        <div className="od-player-art">{show.name.slice(0, 2).toUpperCase()}</div>
+        <div style={{ minWidth: 0 }}>
+          <div className="live" style={{ color: accent }}>● Scorpio OD · {episode.season}</div>
+          <div className="track">{episode.title}</div>
+          <div className="show">{show.name} #{episode.num} · {show.dj}</div>
+        </div>
+      </div>
+      <div className="center od-scrub-wrap">
+        <span className="od-time">{fmtTime(elapsed)}</span>
+        <div className="od-scrub" onClick={seek}>
+          <div className="od-scrub-fill" style={{ width: `${pct}%`, background: accent }}/>
+          <div className="od-scrub-knob" style={{ left: `${pct}%`, background: accent }}/>
+        </div>
+        <span className="od-time">{episode.duration}</span>
+      </div>
+      <div className="right">
+        <button className="od-tolive" onClick={onClearOd}>← Live</button>
+        <div className="vol">
+          <Ic.vol/>
+          <input type="range" min="0" max="100" value={vol} onChange={e => setVol(+e.target.value)} />
+        </div>
+        <button className="ic" aria-label="Delen"><Ic.share/></button>
+      </div>
+    </footer>
+  );
+}
+
 // ─── Section header ───────────────────────────────────────────────────
 function SectHd({ num, title, more, onMore }) {
   return (
@@ -318,6 +380,7 @@ function Footer() {
             <ul>
               <li><a>Programma's</a></li>
               <li><a>Playlist</a></li>
+              <li><a>Scorpio OD</a></li>
               <li><a>Sessions</a></li>
               <li><a>Cultafacts</a></li>
             </ul>
@@ -350,4 +413,4 @@ function Footer() {
   );
 }
 
-Object.assign(window, { Ic, TopNav, Ticker, Player, SectHd, Footer, useNowPlaying });
+Object.assign(window, { Ic, TopNav, Ticker, Player, ODPlayer, fmtTime, SectHd, Footer, useNowPlaying });

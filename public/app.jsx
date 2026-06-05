@@ -13,6 +13,7 @@ function App() {
   const [route, setRoute] = React.useState('home');
   const [playing, setPlaying] = React.useState(false);
   const [sessionFeed, setSessionFeed] = React.useState(null); // null = live stream, set = Mixcloud session
+  const [odNow, setOdNow] = React.useState(null); // {episode, show} when an OD episode is loaded
   const nowPlaying = useNowPlaying();
 
   // expose tokens via CSS vars
@@ -26,7 +27,7 @@ function App() {
     window.scrollTo({ top: 0 });
   }, [route]);
 
-  const Page = { home: Home, programmas: Programmas, playlist: Playlist, sessions: Sessions }[route];
+  const Page = { home: Home, programmas: Programmas, playlist: Playlist, sessions: Sessions, ondemand: OnDemand }[route];
 
   return (
     <div style={style}>
@@ -35,13 +36,15 @@ function App() {
 
       {Page
         ? <Page setRoute={setRoute} playing={playing} setPlaying={setPlaying} nowPlaying={nowPlaying}
-                sessionFeed={sessionFeed} setSessionFeed={setSessionFeed}/>
+                sessionFeed={sessionFeed} setSessionFeed={setSessionFeed}
+                odNow={odNow} setOdNow={setOdNow}/>
         : <Stub route={route} setRoute={setRoute}/>}
 
       <Footer/>
 
       <Player playing={playing} setPlaying={setPlaying} accent={t.accent} nowPlaying={nowPlaying}
-              sessionFeed={sessionFeed} setSessionFeed={setSessionFeed}/>
+              sessionFeed={sessionFeed} setSessionFeed={setSessionFeed}
+              odNow={odNow} onClearOd={() => setOdNow(null)}/>
 
       <TweaksPanel title="TWEAKS">
         <TweakSection label="Accent kleur"/>
