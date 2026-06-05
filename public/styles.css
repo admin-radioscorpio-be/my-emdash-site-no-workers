@@ -975,6 +975,7 @@ img { display: block; max-width: 100%; }
   font-family: "Archivo", sans-serif; font-weight: 900;
   font-size: 20px; letter-spacing: -0.02em;
   transition: background 100ms, color 100ms;
+  overflow: hidden;
 }
 .od-show-row:hover .od-show-art { background: var(--accent); color: var(--ink); border-color: var(--accent); }
 .od-show-name { min-width: 0; }

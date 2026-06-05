@@ -231,7 +231,12 @@ function ODShows({ shows, loading, error, tag, favOnly, fav, onOpen }) {
       </div>
       {filtered.map(s => (
         <div className="od-show-row" key={s.showid} onClick={() => onOpen(s)}>
-          <div className="od-show-art">{odMonogram(s.showName)}</div>
+          <div className="od-show-art">
+            {s.imageURL
+              ? <img src={s.imageURL} alt={s.showName} style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
+              : odMonogram(s.showName)
+            }
+          </div>
           <div className="od-show-name">
             <div className="t">
               {s.showName}
