@@ -27,7 +27,7 @@ function App() {
     window.scrollTo({ top: 0 });
   }, [route]);
 
-  const Page = { home: Home, programmas: Programmas, playlist: Playlist, sessions: Sessions, ondemand: OnDemand }[route];
+  const Page = { home: Home, programmas: Programmas, playlist: Playlist, ondemand: OnDemand }[route];
 
   return (
     <div style={style}>
