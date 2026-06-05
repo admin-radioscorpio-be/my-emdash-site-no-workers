@@ -391,7 +391,7 @@ function ODDetail({ episode, show, fav, onBack, onPlay, isCurrent }) {
         </div>
       </div>
 
-      <main className="shell" style={{ paddingTop: 0 }}>
+      <main className="shell" style={{ paddingTop: 48 }}>
         {trackLoading && (
           <div style={{ padding: '32px 0', color: 'var(--mute)' }}>Playlist laden…</div>
         )}
