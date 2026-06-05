@@ -46,23 +46,23 @@ const SESSIONS = [
   },
 ];
 
-function Sessions({ setRoute, playing, setPlaying, setSessionFeed, sessionFeed }) {
+function Sessions({ sessionFeed, setSessionFeed }) {
   const [activeShow, setActiveShow] = React.useState('');
 
-  const shows = [...new Set(SESSIONS.map(s => s.title))];
-
-  const visible = activeShow
-    ? SESSIONS.filter(s => s.title === activeShow)
-    : SESSIONS;
+  const shows   = [...new Set(SESSIONS.map(s => s.title))];
+  const visible = activeShow ? SESSIONS.filter(s => s.title === activeShow) : SESSIONS;
 
   function playSession(s) {
     setSessionFeed({ feed: s.feed, title: s.episode, showName: s.title, image: s.image });
-    setPlaying(true);
   }
 
-  function isActive(s) {
-    return sessionFeed?.feed === s.feed;
-  }
+  const isActive = s => sessionFeed?.feed === s.feed;
+
+  const btnBase = {
+    fontFamily: '"JetBrains Mono", monospace', fontSize: 11,
+    letterSpacing: '0.08em', textTransform: 'uppercase',
+    border: '1px solid var(--ink)', padding: '5px 12px', cursor: 'pointer',
+  };
 
   return (
     <>
@@ -90,30 +90,19 @@ function Sessions({ setRoute, playing, setPlaying, setSessionFeed, sessionFeed }
         {/* Filter strip */}
         <div style={{
           display: 'flex', gap: 8, padding: '16px 0',
-          borderTop: '1px solid var(--ink)',
-          flexWrap: 'wrap',
+          borderTop: '1px solid var(--ink)', flexWrap: 'wrap',
         }}>
           <button
             onClick={() => setActiveShow('')}
-            style={{
-              fontFamily: '"JetBrains Mono", monospace', fontSize: 11,
-              letterSpacing: '0.08em', textTransform: 'uppercase',
-              background: !activeShow ? 'var(--ink)' : 'none',
-              color: !activeShow ? 'var(--paper)' : 'var(--ink)',
-              border: '1px solid var(--ink)', padding: '5px 12px', cursor: 'pointer',
-            }}>
+            style={{...btnBase, background: !activeShow ? 'var(--ink)' : 'none',
+                    color: !activeShow ? 'var(--paper)' : 'var(--ink)'}}>
             Alle shows
           </button>
           {shows.map(show => (
             <button key={show}
               onClick={() => setActiveShow(s => s === show ? '' : show)}
-              style={{
-                fontFamily: '"JetBrains Mono", monospace', fontSize: 11,
-                letterSpacing: '0.08em', textTransform: 'uppercase',
-                background: activeShow === show ? 'var(--ink)' : 'none',
-                color: activeShow === show ? 'var(--paper)' : 'var(--ink)',
-                border: '1px solid var(--ink)', padding: '5px 12px', cursor: 'pointer',
-              }}>
+              style={{...btnBase, background: activeShow === show ? 'var(--ink)' : 'none',
+                      color: activeShow === show ? 'var(--paper)' : 'var(--ink)'}}>
               {show}
             </button>
           ))}
@@ -122,10 +111,8 @@ function Sessions({ setRoute, playing, setPlaying, setSessionFeed, sessionFeed }
         {/* Sessions grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: 1,
+          gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
           border: '1px solid var(--ink)',
-          marginTop: 0,
         }}>
           {visible.map(s => {
             const active = isActive(s);
@@ -138,13 +125,14 @@ function Sessions({ setRoute, playing, setPlaying, setSessionFeed, sessionFeed }
                 color: active ? 'var(--paper)' : 'var(--ink)',
                 display: 'flex', flexDirection: 'column', gap: 16,
               }}>
-                {/* Cover placeholder */}
+                {/* Cover */}
                 <div style={{
                   width: '100%', aspectRatio: '1',
-                  background: active ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                  background: active ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, letterSpacing: '0.08em', fontFamily: '"JetBrains Mono", monospace',
-                  textTransform: 'uppercase', color: active ? 'rgba(255,255,255,0.4)' : 'var(--mute)',
+                  fontSize: 11, letterSpacing: '0.08em',
+                  fontFamily: '"JetBrains Mono", monospace', textTransform: 'uppercase',
+                  color: active ? 'rgba(255,255,255,0.35)' : 'var(--mute)',
                   position: 'relative', overflow: 'hidden',
                 }}>
                   {s.image
@@ -152,57 +140,41 @@ function Sessions({ setRoute, playing, setPlaying, setSessionFeed, sessionFeed }
                            style={{width:'100%',height:'100%',objectFit:'cover',position:'absolute'}}/>
                     : '[ ' + s.title + ' ]'
                   }
-                  {active && playing && (
-                    <div style={{
-                      position: 'absolute', bottom: 12, right: 12,
-                      display: 'flex', gap: 3, alignItems: 'flex-end', height: 20,
-                    }}>
-                      {[0.6, 1, 0.75, 0.9, 0.5].map((h, i) => (
-                        <div key={i} style={{
-                          width: 3, background: 'var(--accent)',
-                          height: `${h * 100}%`,
-                          animation: `bar-bounce 0.${6+i}s ease-in-out infinite alternate`,
-                        }}/>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
+                {/* Meta */}
                 <div>
                   <div style={{
                     fontFamily: '"JetBrains Mono", monospace', fontSize: 10,
                     letterSpacing: '0.1em', textTransform: 'uppercase',
-                    color: active ? 'rgba(255,255,255,0.55)' : 'var(--mute)',
-                    marginBottom: 4,
+                    color: active ? 'rgba(255,255,255,0.5)' : 'var(--mute)', marginBottom: 4,
                   }}>
                     {s.date} · {s.episode}
                   </div>
                   <div style={{
                     fontFamily: 'Archivo', fontWeight: 900,
-                    fontSize: 22, lineHeight: 1, letterSpacing: '-0.01em',
-                    textTransform: 'uppercase',
+                    fontSize: 22, lineHeight: 1, letterSpacing: '-0.01em', textTransform: 'uppercase',
                   }}>
                     {s.title}
                   </div>
                 </div>
 
+                {/* Action */}
                 <button
-                  onClick={() => active && playing ? setPlaying(false) : active ? setPlaying(true) : playSession(s)}
+                  onClick={() => playSession(s)}
                   style={{
                     alignSelf: 'flex-start',
                     fontFamily: '"JetBrains Mono", monospace', fontSize: 11,
                     letterSpacing: '0.08em', textTransform: 'uppercase',
                     background: active ? 'var(--accent)' : 'none',
-                    color: active ? 'var(--ink)' : active ? 'var(--paper)' : 'var(--ink)',
+                    color: 'var(--ink)',
                     border: active ? '1px solid var(--accent)' : '1px solid currentColor',
                     padding: '7px 14px', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', gap: 8,
                   }}>
-                  {active && playing
-                    ? <><Ic.pause/> Pauzeer</>
-                    : active
-                      ? <><Ic.play/> Hervat</>
-                      : <><Ic.play/> Luister</>
+                  {active
+                    ? <><Ic.play/> Aan het spelen</>
+                    : <><Ic.play/> Luister</>
                   }
                 </button>
               </div>
@@ -210,8 +182,8 @@ function Sessions({ setRoute, playing, setPlaying, setSessionFeed, sessionFeed }
           })}
         </div>
 
-        <div style={{marginTop: 48, marginBottom: 64, color: 'var(--mute)', fontSize: 13,
-                     fontFamily: '"JetBrains Mono", monospace', letterSpacing: '0.06em'}}>
+        <div style={{marginTop:48, marginBottom:64, color:'var(--mute)', fontSize:13,
+                     fontFamily:'"JetBrains Mono", monospace', letterSpacing:'0.06em'}}>
           // Opnames via Mixcloud · RadioScorpio
         </div>
       </main>

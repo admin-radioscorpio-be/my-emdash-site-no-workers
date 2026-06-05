@@ -130,9 +130,7 @@ function Player({ playing, setPlaying, accent, nowPlaying, sessionFeed, setSessi
     Array.from({length: 64}, () => 0.2 + Math.random() * 0.8)
   );
   const [progress, setProgress] = React.useState(0.42);
-  const audioRef  = React.useRef(null);
-  const iframeRef = React.useRef(null);
-  const [iframeLoaded, setIframeLoaded] = React.useState(false);
+  const audioRef = React.useRef(null);
   const { track, show, upcoming } = nowPlaying;
 
   const isSession = !!sessionFeed;
@@ -145,7 +143,7 @@ function Player({ playing, setPlaying, accent, nowPlaying, sessionFeed, setSessi
     return () => { audio.pause(); audioRef.current = null; };
   }, []);
 
-  // Live audio: play only when not in session mode
+  // Live audio: pause whenever a session is active, otherwise follow playing state
   React.useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -155,19 +153,6 @@ function Player({ playing, setPlaying, accent, nowPlaying, sessionFeed, setSessi
       audio.play().catch(() => setPlaying(false));
     }
   }, [playing, isSession]);
-
-  // Reset iframe ready state when the session changes
-  React.useEffect(() => {
-    setIframeLoaded(false);
-  }, [sessionFeed?.feed]);
-
-  // Mixcloud control: send play/pause via postMessage once iframe is loaded
-  React.useEffect(() => {
-    if (!iframeLoaded || !iframeRef.current) return;
-    iframeRef.current.contentWindow?.postMessage(
-      JSON.stringify({ method: playing ? 'play' : 'pause' }), '*'
-    );
-  }, [playing, iframeLoaded]);
 
   // Sync volume
   React.useEffect(() => {
@@ -182,26 +167,17 @@ function Player({ playing, setPlaying, accent, nowPlaying, sessionFeed, setSessi
     navigator.mediaSession.setActionHandler('stop',  () => setPlaying(false));
   }, []);
 
-  // Media Session — update metadata
+  // Media Session — update metadata when live track changes
   React.useEffect(() => {
-    if (!('mediaSession' in navigator)) return;
-    if (isSession) {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title:  sessionFeed.title,
-        artist: sessionFeed.showName ?? 'Radio Scorpio Sessions',
-        album:  'Radio Scorpio 106 FM',
-        artwork: sessionFeed.image ? [{ src: sessionFeed.image, sizes: '300x300', type: 'image/jpeg' }] : [],
-      });
-    } else {
-      const parts  = track?.title?.split(' - ') ?? [];
-      const artist = parts.length > 1 ? parts[0].trim() : 'Radio Scorpio';
-      const title  = parts.length > 1 ? parts.slice(1).join(' - ').trim() : (track?.title ?? 'Radio Scorpio 106 FM');
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title, artist, album: 'Radio Scorpio 106 FM',
-        artwork: track?.image ? [{ src: track.image, sizes: '250x250', type: 'image/jpeg' }] : [],
-      });
-    }
-  }, [track, sessionFeed]);
+    if (!('mediaSession' in navigator) || isSession) return;
+    const parts  = track?.title?.split(' - ') ?? [];
+    const artist = parts.length > 1 ? parts[0].trim() : 'Radio Scorpio';
+    const title  = parts.length > 1 ? parts.slice(1).join(' - ').trim() : (track?.title ?? 'Radio Scorpio 106 FM');
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title, artist, album: 'Radio Scorpio 106 FM',
+      artwork: track?.image ? [{ src: track.image, sizes: '250x250', type: 'image/jpeg' }] : [],
+    });
+  }, [track]);
 
   // Media Session — sync playback state
   React.useEffect(() => {
@@ -215,53 +191,36 @@ function Player({ playing, setPlaying, accent, nowPlaying, sessionFeed, setSessi
     return () => clearInterval(t);
   }, [playing]);
 
-  const activeBar = Math.floor(progress * bars.length);
-
+  const activeBar  = Math.floor(progress * bars.length);
   const trackLabel = track?.title ?? '—';
   const showLabel  = show ? `Nu: ${show.name} · ${show.start}–${show.end}` : 'Nu: —';
   const nextLabel  = upcoming
     ? <span>Straks <b>{upcoming.start} {upcoming.name}</b></span>
     : <span>Straks —</span>;
 
-  function goLive() {
-    setSessionFeed(null);
-    setPlaying(false);
-  }
+  // Mixcloud widget URL — dark=1 matches our dark player background
+  const mixcloudSrc = isSession
+    ? `https://player-widget.mixcloud.com/widget/iframe/?hide_cover=1&mini=1&dark=1&autoplay=1&feed=${encodeURIComponent(sessionFeed.feed)}`
+    : null;
 
   return (
     <footer className="player">
-      {/* Hidden Mixcloud iframe — only mounted when a session is active */}
-      {isSession && (
-        <iframe
-          key={sessionFeed.feed}
-          ref={iframeRef}
-          src={`https://player-widget.mixcloud.com/widget/iframe/?hide_cover=1&feed=${encodeURIComponent(sessionFeed.feed)}`}
-          onLoad={() => setIframeLoaded(true)}
-          allow="autoplay"
-          style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
-          title="Mixcloud player"
-        />
-      )}
-
+      {/* ── Left ── */}
       <div className="left">
-        <button className="play" onClick={() => setPlaying(p => !p)} aria-label={playing ? 'Pauze' : 'Speel'}>
-          {playing ? <Ic.pause cls="lg"/> : <Ic.play cls="lg"/>}
-        </button>
+        {!isSession && (
+          <button className="play" onClick={() => setPlaying(p => !p)} aria-label={playing ? 'Pauze' : 'Speel'}>
+            {playing ? <Ic.pause cls="lg"/> : <Ic.play cls="lg"/>}
+          </button>
+        )}
         {isSession ? (
-          <>
-            {sessionFeed.image && (
-              <img src={sessionFeed.image} alt="" className="track-art"
-                   style={{width:40,height:40,borderRadius:3,objectFit:'cover',flexShrink:0}}/>
-            )}
-            <div>
-              <div className="live" style={{color:'var(--accent)'}}>
-                <span className="dot" style={{background:'var(--accent)', marginRight:8}}/>
-                Sessie
-              </div>
-              <div className="track">{sessionFeed.title}</div>
-              <div className="show">{sessionFeed.showName ?? ''}</div>
+          <div>
+            <div className="live" style={{color:'var(--accent)'}}>
+              <span className="dot" style={{background:'var(--accent)', marginRight:8}}/>
+              Sessie · Mixcloud
             </div>
-          </>
+            <div className="track">{sessionFeed.showName}</div>
+            <div className="show">{sessionFeed.title}</div>
+          </div>
         ) : (
           <>
             {track?.image && (
@@ -277,23 +236,35 @@ function Player({ playing, setPlaying, accent, nowPlaying, sessionFeed, setSessi
         )}
       </div>
 
+      {/* ── Center: Mixcloud widget in session mode, waveform in live mode ── */}
       <div className="center">
-        <div className="wave" aria-hidden="true">
-          {bars.map((h, i) => (
-            <div key={i} className={"bar" + (i <= activeBar && playing ? " on" : "")}
-                 style={{ height: `${h * 100}%`,
-                          background: i <= activeBar && playing ? accent : undefined }}/>
-          ))}
-        </div>
+        {isSession ? (
+          <iframe
+            key={sessionFeed.feed}
+            src={mixcloudSrc}
+            allow="autoplay"
+            style={{ width: '100%', height: 60, border: 'none', display: 'block' }}
+            title="Mixcloud player"
+          />
+        ) : (
+          <div className="wave" aria-hidden="true">
+            {bars.map((h, i) => (
+              <div key={i} className={"bar" + (i <= activeBar && playing ? " on" : "")}
+                   style={{ height: `${h * 100}%`,
+                            background: i <= activeBar && playing ? accent : undefined }}/>
+            ))}
+          </div>
+        )}
       </div>
 
+      {/* ── Right ── */}
       <div className="right">
         {isSession ? (
-          <button onClick={goLive} style={{
+          <button onClick={() => setSessionFeed(null)} style={{
             fontFamily: '"JetBrains Mono", monospace', fontSize: 11,
             letterSpacing: '0.08em', textTransform: 'uppercase',
-            background: 'none', border: '1px solid var(--ink)',
-            color: 'var(--ink)', padding: '6px 12px', cursor: 'pointer',
+            background: 'none', border: '1px solid rgba(244,242,236,0.35)',
+            color: 'var(--paper)', padding: '7px 14px', cursor: 'pointer',
           }}>
             ← Terug live
           </button>
