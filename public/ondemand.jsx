@@ -5,6 +5,11 @@ const PLAYLIST_API_URL = 'https://public.radioscorpio.be/api/playlist/list';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
+function mixcloudFeed(url) {
+  try { return new URL(url).pathname; }
+  catch { return url; }
+}
+
 function fmtOdDate(ts) {
   return new Date(ts * 1000).toLocaleDateString('nl-BE', {
     day: '2-digit', month: '2-digit', year: 'numeric',
@@ -430,7 +435,7 @@ function ODDetail({ episode, show, fav, onBack, onPlay, isCurrent }) {
 }
 
 // ─── Page root ────────────────────────────────────────────────────────────
-function OnDemand({ setRoute, odNow, setOdNow, setPlaying }) {
+function OnDemand({ setRoute, sessionFeed, setSessionFeed, setPlaying }) {
   const fav                           = useODFavorites();
   const [view, setView]               = React.useState('shows');
   const [tag, setTag]                 = React.useState('Alles');
@@ -450,22 +455,12 @@ function OnDemand({ setRoute, odNow, setOdNow, setPlaying }) {
   const openEp   = (ep) => { setEpisode(ep); setView('detail'); window.scrollTo({ top: 0 }); };
 
   const play = (ep, s) => {
-    setOdNow({
-      episode: {
-        id:          ep.id,
-        title:       ep.title,
-        season:      ep.season,
-        num:         0,
-        duration:    '—',
-        durationMin: 60,
-        mixcloudURL: ep.mixcloudURL,
-      },
-      show: {
-        name: s.showName,
-        dj:   '',
-      },
+    setSessionFeed({
+      feed:     mixcloudFeed(ep.mixcloudURL),
+      title:    ep.title,
+      showName: s.showName,
+      image:    ep.imageURL ?? null,
     });
-    setPlaying(true);
   };
 
   const doShare = async () => {
@@ -531,7 +526,7 @@ function OnDemand({ setRoute, odNow, setOdNow, setPlaying }) {
       {view === 'detail' && episode && show && (
         <ODDetail episode={episode} show={show} fav={fav}
                   onBack={() => setView('episodes')} onPlay={play}
-                  isCurrent={odNow && odNow.episode.id === episode.id}/>
+                  isCurrent={!!episode.mixcloudURL && sessionFeed?.feed === mixcloudFeed(episode.mixcloudURL)}/>
       )}
 
       {toast && <div className="od-toast">{toast}</div>}
