@@ -124,16 +124,20 @@ function useNowPlaying() {
   return { track, show, upcoming };
 }
 
-function Player({ playing, setPlaying, accent, nowPlaying }) {
+function Player({ playing, setPlaying, accent, nowPlaying, sessionFeed, setSessionFeed }) {
   const [vol, setVol] = React.useState(70);
   const [bars] = React.useState(() =>
     Array.from({length: 64}, () => 0.2 + Math.random() * 0.8)
   );
   const [progress, setProgress] = React.useState(0.42);
-  const audioRef = React.useRef(null);
+  const audioRef  = React.useRef(null);
+  const iframeRef = React.useRef(null);
+  const [iframeLoaded, setIframeLoaded] = React.useState(false);
   const { track, show, upcoming } = nowPlaying;
 
-  // Create the audio element once
+  const isSession = !!sessionFeed;
+
+  // Create the live audio element once
   React.useEffect(() => {
     const audio = new Audio(STREAM_URL);
     audio.volume = vol / 100;
@@ -141,16 +145,29 @@ function Player({ playing, setPlaying, accent, nowPlaying }) {
     return () => { audio.pause(); audioRef.current = null; };
   }, []);
 
-  // Play / pause when `playing` toggles
+  // Live audio: play only when not in session mode
   React.useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (playing) {
-      audio.play().catch(() => setPlaying(false));
-    } else {
+    if (isSession || !playing) {
       audio.pause();
+    } else {
+      audio.play().catch(() => setPlaying(false));
     }
-  }, [playing]);
+  }, [playing, isSession]);
+
+  // Reset iframe ready state when the session changes
+  React.useEffect(() => {
+    setIframeLoaded(false);
+  }, [sessionFeed?.feed]);
+
+  // Mixcloud control: send play/pause via postMessage once iframe is loaded
+  React.useEffect(() => {
+    if (!iframeLoaded || !iframeRef.current) return;
+    iframeRef.current.contentWindow?.postMessage(
+      JSON.stringify({ method: playing ? 'play' : 'pause' }), '*'
+    );
+  }, [playing, iframeLoaded]);
 
   // Sync volume
   React.useEffect(() => {
@@ -165,22 +182,26 @@ function Player({ playing, setPlaying, accent, nowPlaying }) {
     navigator.mediaSession.setActionHandler('stop',  () => setPlaying(false));
   }, []);
 
-  // Media Session — update metadata when track changes
+  // Media Session — update metadata
   React.useEffect(() => {
     if (!('mediaSession' in navigator)) return;
-    const parts = track?.title?.split(' - ') ?? [];
-    const artist = parts.length > 1 ? parts[0].trim() : 'Radio Scorpio';
-    const title  = parts.length > 1 ? parts.slice(1).join(' - ').trim() : (track?.title ?? 'Radio Scorpio 106 FM');
-    const artwork = track?.image
-      ? [{ src: track.image, sizes: '250x250', type: 'image/jpeg' }]
-      : [];
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title,
-      artist,
-      album: 'Radio Scorpio 106 FM',
-      artwork,
-    });
-  }, [track]);
+    if (isSession) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title:  sessionFeed.title,
+        artist: sessionFeed.showName ?? 'Radio Scorpio Sessions',
+        album:  'Radio Scorpio 106 FM',
+        artwork: sessionFeed.image ? [{ src: sessionFeed.image, sizes: '300x300', type: 'image/jpeg' }] : [],
+      });
+    } else {
+      const parts  = track?.title?.split(' - ') ?? [];
+      const artist = parts.length > 1 ? parts[0].trim() : 'Radio Scorpio';
+      const title  = parts.length > 1 ? parts.slice(1).join(' - ').trim() : (track?.title ?? 'Radio Scorpio 106 FM');
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title, artist, album: 'Radio Scorpio 106 FM',
+        artwork: track?.image ? [{ src: track.image, sizes: '250x250', type: 'image/jpeg' }] : [],
+      });
+    }
+  }, [track, sessionFeed]);
 
   // Media Session — sync playback state
   React.useEffect(() => {
@@ -196,30 +217,66 @@ function Player({ playing, setPlaying, accent, nowPlaying }) {
 
   const activeBar = Math.floor(progress * bars.length);
 
-  const trackLabel = track?.title  ?? '—';
-  const showLabel  = show
-    ? `Nu: ${show.name} · ${show.start}–${show.end}`
-    : 'Nu: —';
+  const trackLabel = track?.title ?? '—';
+  const showLabel  = show ? `Nu: ${show.name} · ${show.start}–${show.end}` : 'Nu: —';
   const nextLabel  = upcoming
     ? <span>Straks <b>{upcoming.start} {upcoming.name}</b></span>
     : <span>Straks —</span>;
 
+  function goLive() {
+    setSessionFeed(null);
+    setPlaying(false);
+  }
+
   return (
     <footer className="player">
+      {/* Hidden Mixcloud iframe — only mounted when a session is active */}
+      {isSession && (
+        <iframe
+          key={sessionFeed.feed}
+          ref={iframeRef}
+          src={`https://player-widget.mixcloud.com/widget/iframe/?hide_cover=1&feed=${encodeURIComponent(sessionFeed.feed)}`}
+          onLoad={() => setIframeLoaded(true)}
+          allow="autoplay"
+          style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+          title="Mixcloud player"
+        />
+      )}
+
       <div className="left">
         <button className="play" onClick={() => setPlaying(p => !p)} aria-label={playing ? 'Pauze' : 'Speel'}>
           {playing ? <Ic.pause cls="lg"/> : <Ic.play cls="lg"/>}
         </button>
-        {track?.image && (
-          <img src={track.image} alt="" className="track-art"
-               style={{width:40,height:40,borderRadius:3,objectFit:'cover',flexShrink:0}}/>
+        {isSession ? (
+          <>
+            {sessionFeed.image && (
+              <img src={sessionFeed.image} alt="" className="track-art"
+                   style={{width:40,height:40,borderRadius:3,objectFit:'cover',flexShrink:0}}/>
+            )}
+            <div>
+              <div className="live" style={{color:'var(--accent)'}}>
+                <span className="dot" style={{background:'var(--accent)', marginRight:8}}/>
+                Sessie
+              </div>
+              <div className="track">{sessionFeed.title}</div>
+              <div className="show">{sessionFeed.showName ?? ''}</div>
+            </div>
+          </>
+        ) : (
+          <>
+            {track?.image && (
+              <img src={track.image} alt="" className="track-art"
+                   style={{width:40,height:40,borderRadius:3,objectFit:'cover',flexShrink:0}}/>
+            )}
+            <div>
+              <div className="live"><span className="dot pulse"/> Live · 106 FM</div>
+              <div className="track">{trackLabel}</div>
+              <div className="show">{showLabel}</div>
+            </div>
+          </>
         )}
-        <div>
-          <div className="live"><span className="dot pulse"/> Live · 106 FM</div>
-          <div className="track">{trackLabel}</div>
-          <div className="show">{showLabel}</div>
-        </div>
       </div>
+
       <div className="center">
         <div className="wave" aria-hidden="true">
           {bars.map((h, i) => (
@@ -229,13 +286,27 @@ function Player({ playing, setPlaying, accent, nowPlaying }) {
           ))}
         </div>
       </div>
+
       <div className="right">
-        <div className="nextup">{nextLabel}</div>
-        <div className="vol">
-          <Ic.vol/>
-          <input type="range" min="0" max="100" value={vol} onChange={e => setVol(+e.target.value)} />
-        </div>
-        <button className="ic" aria-label="Delen"><Ic.share/></button>
+        {isSession ? (
+          <button onClick={goLive} style={{
+            fontFamily: '"JetBrains Mono", monospace', fontSize: 11,
+            letterSpacing: '0.08em', textTransform: 'uppercase',
+            background: 'none', border: '1px solid var(--ink)',
+            color: 'var(--ink)', padding: '6px 12px', cursor: 'pointer',
+          }}>
+            ← Terug live
+          </button>
+        ) : (
+          <>
+            <div className="nextup">{nextLabel}</div>
+            <div className="vol">
+              <Ic.vol/>
+              <input type="range" min="0" max="100" value={vol} onChange={e => setVol(+e.target.value)} />
+            </div>
+            <button className="ic" aria-label="Delen"><Ic.share/></button>
+          </>
+        )}
       </div>
     </footer>
   );
