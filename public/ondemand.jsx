@@ -1,6 +1,6 @@
 // ondemand.jsx — SCORPIO OD (on-demand archive)
 
-const OD_API           = '/api/metadata';
+const OD_API           = 'https://public.radioscorpio.be/api/metadata';
 const PLAYLIST_API_URL = 'https://public.radioscorpio.be/api/playlist/list';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
