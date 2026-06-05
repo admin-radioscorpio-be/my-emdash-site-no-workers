@@ -2,7 +2,7 @@
 
 // ─── Flipping wordmark: On Demand → OverDose → … (hard cut) ────────────
 function ODWordmark() {
-  const words = ['On Demand', 'OverDose', 'Off the Dial', 'Open Door', 'Ongoing Discovery'];
+  const words = ['On Demand', 'OverDose', 'Off the Dial', 'Open Door', 'Ongoing Discovery', 'Odd Discoveries', 'Own Detour', 'Original Drops', 'Offbeat Diamonds', 'Off Doctrine', 'Other Dimension'];
   const [i, setI] = React.useState(0);
   React.useEffect(() => {
     const t = setInterval(() => setI(x => (x + 1) % words.length), 1900);
