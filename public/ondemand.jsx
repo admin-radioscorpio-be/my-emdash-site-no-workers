@@ -510,7 +510,7 @@ function OnDemand({ setRoute, sessionFeed, setSessionFeed, setPlaying }) {
         )}
       </section>
 
-      <main className="shell" style={{ paddingTop: 0 }}>
+      <main className="shell" style={{ paddingTop: 0, paddingBottom: 64 }}>
         {view === 'shows' && (
           <ODShows shows={shows} loading={loading} error={error}
                    tag={tag} favOnly={favOnly} fav={fav} onOpen={openShow}/>
@@ -518,7 +518,7 @@ function OnDemand({ setRoute, sessionFeed, setSessionFeed, setPlaying }) {
       </main>
 
       {view === 'episodes' && show && (
-        <main className="shell" style={{ paddingTop: 0 }}>
+        <main className="shell" style={{ paddingTop: 0, paddingBottom: 64 }}>
           <ODEpisodes show={show} fav={fav} onOpen={openEp} onBack={() => setView('shows')}/>
         </main>
       )}
