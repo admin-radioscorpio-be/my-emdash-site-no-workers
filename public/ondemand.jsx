@@ -368,7 +368,7 @@ function ODDetail({ episode, show, fav, onBack, onPlay, isCurrent }) {
             <div className="title" style={{ marginTop: 12 }}>
               {show.showName} · {fmtOdDate(episode.episodeDate)}
             </div>
-            {episode.description && <p className="od-detail-desc">{episode.description}</p>}
+            {episode.description && <p className="od-detail-desc" style={{whiteSpace:'pre-line'}}>{episode.description}</p>}
           </div>
           <div className="row" style={{ flexWrap: 'wrap', gap: 16 }}>
             <span style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
