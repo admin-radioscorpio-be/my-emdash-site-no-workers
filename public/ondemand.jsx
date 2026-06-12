@@ -216,7 +216,7 @@ function ODShows({ shows, loading, error, tag, favOnly, fav, onOpen }) {
   return (
     <div className="od-show-list" style={{ borderTop: '1px solid var(--ink)', marginTop: 24 }}>
       <div className="od-show-head">
-        <span></span><span>show</span><span>genre</span>
+        <span></span><span>show</span>
         <span>archief</span><span></span><span></span>
       </div>
       {filtered.map(s => (
@@ -234,7 +234,6 @@ function ODShows({ shows, loading, error, tag, favOnly, fav, onOpen }) {
             </div>
             <div className="s">{s.description ?? ''}</div>
           </div>
-          <span className="od-show-genre">{s.tags?.[0] ?? '—'}</span>
           <span className="od-show-meta">
             {s.episodeCount} afl.{s.lastEpisodeDate ? ` · ${fmtOdDate(s.lastEpisodeDate)}` : ''}
           </span>
@@ -294,7 +293,7 @@ function ODEpisodes({ show, fav, onOpen, onBack }) {
         </div>
         <div className="info">
           <div>
-            <div className="lbl">// Scorpio OD{show.tags?.[0] ? ` · ${show.tags[0]}` : ''}</div>
+            <div className="lbl">// Scorpio OD{show.tags?.length ? ` · ${show.tags.join(' · ')}` : ''}</div>
             <div className="artist" style={{ fontSize: 'clamp(34px,5.5vw,72px)' }}>{show.showName}</div>
             <div className="title" style={{ marginTop: 12 }}>
               {show.episodeCount} afleveringen

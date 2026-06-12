@@ -950,7 +950,7 @@ img { display: block; max-width: 100%; }
 /* shows list */
 .od-show-head, .od-show-row {
   display: grid;
-  grid-template-columns: 56px 1fr 160px 200px 40px 32px;
+  grid-template-columns: 56px 1fr 200px 40px 32px;
   gap: 20px;
   align-items: center;
   padding: 14px 12px;
@@ -964,7 +964,6 @@ img { display: block; max-width: 100%; }
 .od-show-row { cursor: pointer; transition: background 100ms, color 100ms; }
 .od-show-row:hover { background: var(--ink); color: var(--paper); }
 .od-show-row:hover .od-show-name .s,
-.od-show-row:hover .od-show-genre,
 .od-show-row:hover .od-show-meta { color: rgba(244,242,236,0.65); }
 .od-show-row:hover .od-show-arr { color: var(--accent); }
 .od-show-art {
