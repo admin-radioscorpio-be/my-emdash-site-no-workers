@@ -1,7 +1,6 @@
 // ondemand.jsx — SCORPIO OD (on-demand archive)
 
-const OD_API           = 'https://public.radioscorpio.be/api/metadata';
-const PLAYLIST_API_URL = 'https://public.radioscorpio.be/api/playlist/list';
+const OD_API = 'https://public.radioscorpio.be/api/metadata';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -17,17 +16,12 @@ function fmtOdDate(ts) {
   });
 }
 
-function parseSongField(song) {
-  const stripped = song.replace(/^\d+\.\s+/, '');
-  const idx = stripped.indexOf(' - ');
-  if (idx === -1) return { artist: stripped, title: '—' };
-  return { artist: stripped.slice(0, idx).trim(), title: stripped.slice(idx + 3).trim() };
-}
-
-function fmtPlaytime(ts) {
-  return new Date(ts.replace(' ', 'T') + 'Z').toLocaleTimeString('nl-BE', {
-    hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Brussels',
-  });
+function fmtSeconds(s) {
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
 }
 
 // ─── API hooks ────────────────────────────────────────────────────────────
@@ -112,20 +106,13 @@ function useODTracklist(episode) {
   const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
-    if (!episode?.episodeDate) return;
+    if (!episode?.id) return;
     setLoading(true);
     setItems([]);
 
-    fetch(PLAYLIST_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        startlistdate: new Date(episode.episodeDate * 1000).toISOString(),
-        filterdate: '', filterhour: '',
-      }),
-    })
+    fetch(`${OD_API}/od/episodes/${episode.id}`)
       .then(r => r.json())
-      .then(data => { setItems(data.playlistitems ?? []); setLoading(false); })
+      .then(data => { setItems(data.tracklist ?? []); setLoading(false); })
       .catch(() => setLoading(false));
   }, [episode?.id]);
 
@@ -362,7 +349,6 @@ function ODEpisodes({ show, fav, onOpen, onBack }) {
 // ─── Episode detail + tracklist ───────────────────────────────────────────
 function ODDetail({ episode, show, fav, onBack, onPlay, isCurrent }) {
   const { items, loading: trackLoading } = useODTracklist(episode);
-  const defaultArt = 'https://can.radioscorpio.be/2016/03/cd.png';
 
   return (
     <section data-screen-label="OD — Episode detail">
@@ -415,29 +401,39 @@ function ODDetail({ episode, show, fav, onBack, onPlay, isCurrent }) {
         {!trackLoading && items.length > 0 && (
           <>
             <div className="pl-head" style={{ borderTop: 0 }}>
-              <span>/ #</span><span>tijd</span><span></span><span>artiest · titel</span>
+              <span>/ #</span><span>offset</span><span></span><span>artiest · titel</span>
             </div>
-            {items.map((t, i) => {
-              const { artist, title } = parseSongField(t.song);
-              const art = t.imageurl && t.imageurl !== defaultArt ? t.imageurl : null;
-              return (
-                <div key={t.ID} className="pl-row">
-                  <span className="num">{String(i + 1).padStart(3, '0')}</span>
-                  <span className="time">{fmtPlaytime(t.time)}</span>
-                  <div className="cover">
-                    {art
-                      ? <img src={art} alt={artist}
-                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
-                      : <span style={{ color: 'var(--mute)', fontSize: 10 }}>—</span>
-                    }
+            {(() => {
+              let trackNum = 0;
+              return items.map((t, i) => {
+                if (t.chapter) {
+                  return (
+                    <div key={i} className="pl-row" style={{ opacity: 0.5 }}>
+                      <span className="num">—</span>
+                      <span className="time">{fmtSeconds(t.startSeconds)}</span>
+                      <div className="cover"/>
+                      <div>
+                        <div className="artist">{t.chapter}</div>
+                      </div>
+                    </div>
+                  );
+                }
+                trackNum++;
+                return (
+                  <div key={i} className="pl-row">
+                    <span className="num">{String(trackNum).padStart(3, '0')}</span>
+                    <span className="time">{fmtSeconds(t.startSeconds)}</span>
+                    <div className="cover">
+                      <span style={{ color: 'var(--mute)', fontSize: 10 }}>—</span>
+                    </div>
+                    <div>
+                      <div className="artist">{t.artistName ?? '—'}</div>
+                      <div className="title">{t.songName ?? '—'}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="artist">{artist}</div>
-                    <div className="title">{title}</div>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </>
         )}
         {!trackLoading && items.length === 0 && (
