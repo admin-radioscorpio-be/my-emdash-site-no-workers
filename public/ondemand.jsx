@@ -188,7 +188,7 @@ function odMonogram(name) {
 }
 
 function ODShows({ shows, loading, error, tag, favOnly, fav, onOpen }) {
-  let filtered = shows;
+  let filtered = shows.filter(s => s.episodeCount > 0);
   if (tag && tag !== 'Alles') filtered = filtered.filter(s => s.tags?.includes(tag));
   if (favOnly) filtered = filtered.filter(s => fav.isFav('show', s.showid));
   filtered = [...filtered].sort((a, b) => (b.lastEpisodeDate ?? 0) - (a.lastEpisodeDate ?? 0));
@@ -214,7 +214,7 @@ function ODShows({ shows, loading, error, tag, favOnly, fav, onOpen }) {
   );
 
   return (
-    <div className="od-show-list" style={{ borderTop: '1px solid var(--ink)' }}>
+    <div className="od-show-list" style={{ borderTop: '1px solid var(--ink)', marginTop: 24 }}>
       <div className="od-show-head">
         <span></span><span>show</span><span>genre</span>
         <span>archief</span><span></span><span></span>
