@@ -282,68 +282,87 @@ function ODEpisodes({ show, fav, onOpen, onBack }) {
     <section data-screen-label="OD — Episodes">
       <div className="od-subhead">
         <button className="od-back" onClick={onBack}>← Alle shows</button>
-        <div className="od-subhead-main">
-          <div className="crumb">/ Scorpio OD</div>
-          <h1 className="od-show-title">{show.showName}</h1>
-          <div className="od-show-meta">
-            {show.episodeCount} afleveringen
-            {show.lastEpisodeDate ? ` · laatste: ${fmtOdDate(show.lastEpisodeDate)}` : ''}
-          </div>
-        </div>
-        <FavBtn active={fav.isFav('show', show.showid)} label="Bewaar show"
-                onClick={() => fav.toggle('show', show.showid)}/>
       </div>
 
-      <div className="od-eptools">
-        <span className="od-eptools-lbl">Afleveringen · nieuwste eerst</span>
-        <label className="od-select">
-          <span>Seizoen</span>
-          <select value={season} onChange={e => setSeason(e.target.value)}>
-            <option value="Alles">Alle seizoenen</option>
-            {seasons.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </label>
+      <div className="now-big od-show" style={{ maxWidth: 1440, margin: '0 auto' }}>
+        <div className="cover">
+          {show.imageURL
+            ? <img src={show.imageURL} alt={show.showName}
+                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
+            : <span className="ph">[ {show.showName.toUpperCase()} ]</span>
+          }
+        </div>
+        <div className="info">
+          <div>
+            <div className="lbl">// Scorpio OD{show.tags?.[0] ? ` · ${show.tags[0]}` : ''}</div>
+            <div className="artist" style={{ fontSize: 'clamp(34px,5.5vw,72px)' }}>{show.showName}</div>
+            <div className="title" style={{ marginTop: 12 }}>
+              {show.episodeCount} afleveringen
+              {show.lastEpisodeDate ? ` · laatste: ${fmtOdDate(show.lastEpisodeDate)}` : ''}
+            </div>
+            {show.description && (
+              <p className="od-detail-desc" style={{ whiteSpace: 'pre-line' }}>{show.description}</p>
+            )}
+          </div>
+          <div className="row">
+            <FavBtn active={fav.isFav('show', show.showid)} label="Bewaar show"
+                    onClick={() => fav.toggle('show', show.showid)}/>
+          </div>
+        </div>
       </div>
 
-      {loading && (
-        <div style={{ padding: '48px 0', textAlign: 'center', color: 'var(--mute)' }}>Laden…</div>
-      )}
-      {error && (
-        <div style={{ padding: '48px 0', textAlign: 'center', color: 'var(--mute)' }}>
-          Kon afleveringen niet laden.
+      <main className="shell" style={{ paddingTop: 0, paddingBottom: 64 }}>
+        <div className="od-eptools">
+          <span className="od-eptools-lbl">Afleveringen · nieuwste eerst</span>
+          <label className="od-select">
+            <span>Seizoen</span>
+            <select value={season} onChange={e => setSeason(e.target.value)}>
+              <option value="Alles">Alle seizoenen</option>
+              {seasons.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </label>
         </div>
-      )}
 
-      {!loading && !error && (
-        <div className="od-eplist">
-          <div className="od-ep-head">
-            <span>datum</span><span>seizoen</span><span>#</span>
-            <span>aflevering</span><span></span><span></span>
+        {loading && (
+          <div style={{ padding: '48px 0', textAlign: 'center', color: 'var(--mute)' }}>Laden…</div>
+        )}
+        {error && (
+          <div style={{ padding: '48px 0', textAlign: 'center', color: 'var(--mute)' }}>
+            Kon afleveringen niet laden.
           </div>
-          {episodes.map((ep, i) => (
-            <div className="od-ep-row" key={ep.id} onClick={() => onOpen(ep)}>
-              <span className="od-ep-date">{fmtOdDate(ep.episodeDate)}</span>
-              <span className="od-ep-season">{ep.season}</span>
-              <span className="od-ep-num">{String(epNums[i]).padStart(2, '0')}</span>
-              <div className="od-ep-title">
-                <div className="t">{ep.title}</div>
-                <div className="s">{ep.description ?? ''}</div>
+        )}
+
+        {!loading && !error && (
+          <div className="od-eplist">
+            <div className="od-ep-head">
+              <span>datum</span><span>seizoen</span><span>#</span>
+              <span>aflevering</span><span></span><span></span>
+            </div>
+            {episodes.map((ep, i) => (
+              <div className="od-ep-row" key={ep.id} onClick={() => onOpen(ep)}>
+                <span className="od-ep-date">{fmtOdDate(ep.episodeDate)}</span>
+                <span className="od-ep-season">{ep.season}</span>
+                <span className="od-ep-num">{String(epNums[i]).padStart(2, '0')}</span>
+                <div className="od-ep-title">
+                  <div className="t">{ep.title}</div>
+                  <div className="s">{ep.description ?? ''}</div>
+                </div>
+                <FavBtn active={fav.isFav('episode', ep.id)} label="Bewaar aflevering"
+                        onClick={(e) => { e.stopPropagation(); fav.toggle('episode', ep.id); }}/>
+                <span className="od-ep-play"><Ic.play/></span>
               </div>
-              <FavBtn active={fav.isFav('episode', ep.id)} label="Bewaar aflevering"
-                      onClick={(e) => { e.stopPropagation(); fav.toggle('episode', ep.id); }}/>
-              <span className="od-ep-play"><Ic.play/></span>
-            </div>
-          ))}
-          {nextCursor && (
-            <div ref={sentinel} className="od-sentinel">
-              {loadingMore && <span className="eyebrow">Meer laden…</span>}
-            </div>
-          )}
-          {!nextCursor && episodes.length === 0 && (
-            <div style={{ padding: '32px 0', color: 'var(--mute)' }}>Geen afleveringen gevonden.</div>
-          )}
-        </div>
-      )}
+            ))}
+            {nextCursor && (
+              <div ref={sentinel} className="od-sentinel">
+                {loadingMore && <span className="eyebrow">Meer laden…</span>}
+              </div>
+            )}
+            {!nextCursor && episodes.length === 0 && (
+              <div style={{ padding: '32px 0', color: 'var(--mute)' }}>Geen afleveringen gevonden.</div>
+            )}
+          </div>
+        )}
+      </main>
     </section>
   );
 }
@@ -537,9 +556,7 @@ function OnDemand({ setRoute, sessionFeed, setSessionFeed, setPlaying }) {
       </main>
 
       {view === 'episodes' && show && (
-        <main className="shell" style={{ paddingTop: 0, paddingBottom: 64 }}>
-          <ODEpisodes show={show} fav={fav} onOpen={openEp} onBack={() => setView('shows')}/>
-        </main>
+        <ODEpisodes show={show} fav={fav} onOpen={openEp} onBack={() => setView('shows')}/>
       )}
 
       {view === 'detail' && episode && show && (
