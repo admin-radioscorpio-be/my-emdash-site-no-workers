@@ -426,7 +426,11 @@ function ODDetail({ episode, show, fav, onBack, onPlay, isCurrent }) {
                     <span className="num">{String(trackNum).padStart(3, '0')}</span>
                     <span className="time">{fmtSeconds(t.startSeconds)}</span>
                     <div className="cover">
-                      <span style={{ color: 'var(--mute)', fontSize: 10 }}>—</span>
+                      {t.artworkURL
+                        ? <img src={t.artworkURL} alt={t.artistName ?? ''}
+                               style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
+                        : <span style={{ color: 'var(--mute)', fontSize: 10 }}>—</span>
+                      }
                     </div>
                     <div>
                       <div className="artist">{t.artistName ?? '—'}</div>
