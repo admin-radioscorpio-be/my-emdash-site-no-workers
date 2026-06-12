@@ -293,7 +293,7 @@ function ODEpisodes({ show, fav, onOpen, onBack }) {
         </div>
         <div className="info">
           <div>
-            <div className="lbl">// Scorpio OD{show.tags?.length ? ` · ${show.tags.join(' · ')}` : ''}</div>
+            <div className="lbl">// Scorpio OD</div>
             <div className="artist" style={{ fontSize: 'clamp(34px,5.5vw,72px)' }}>{show.showName}</div>
             <div className="title" style={{ marginTop: 12 }}>
               {show.episodeCount} afleveringen
@@ -303,9 +303,16 @@ function ODEpisodes({ show, fav, onOpen, onBack }) {
               <p className="od-detail-desc" style={{ whiteSpace: 'pre-line' }}>{show.description}</p>
             )}
           </div>
-          <div className="row">
+          <div className="row" style={{ flexWrap: 'wrap', gap: 16, alignItems: 'center' }}>
             <FavBtn active={fav.isFav('show', show.showid)} label="Bewaar show"
                     onClick={() => fav.toggle('show', show.showid)}/>
+            {show.tags?.length > 0 && (
+              <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 11,
+                             letterSpacing: '0.08em', textTransform: 'uppercase',
+                             color: 'rgba(10,10,10,0.55)' }}>
+                {show.tags.join(' · ')}
+              </span>
+            )}
           </div>
         </div>
       </div>
