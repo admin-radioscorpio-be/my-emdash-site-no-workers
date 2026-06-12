@@ -473,7 +473,7 @@ function ODDetail({ episode, show, fav, onBack, onPlay, isCurrent }) {
 }
 
 // ─── Page root ────────────────────────────────────────────────────────────
-function OnDemand({ setRoute, sessionFeed, setSessionFeed, setPlaying }) {
+function OnDemand({ setRoute, sessionFeed, setSessionFeed, setPlaying, odTarget, setOdTarget }) {
   const fav                           = useODFavorites();
   const [view, setView]               = React.useState('shows');
   const [tag, setTag]                 = React.useState('Alles');
@@ -488,6 +488,14 @@ function OnDemand({ setRoute, sessionFeed, setSessionFeed, setPlaying }) {
     const tags = new Set(shows.flatMap(s => s.tags ?? []).filter(Boolean));
     return ['Alles', ...[...tags].sort()];
   }, [shows]);
+
+  // Deep-link from schedule: once shows are loaded, auto-navigate to the target show
+  React.useEffect(() => {
+    if (!odTarget || loading || !shows.length) return;
+    const match = shows.find(s => s.showid === odTarget.showid);
+    if (match) { setShow(match); setView('episodes'); window.scrollTo({ top: 0 }); }
+    setOdTarget(null);
+  }, [odTarget, loading, shows]);
 
   const openShow = (s) => { setShow(s); setView('episodes'); window.scrollTo({ top: 0 }); };
   const openEp   = (ep) => { setEpisode(ep); setView('detail'); window.scrollTo({ top: 0 }); };

@@ -98,10 +98,15 @@ function useSchedule() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function Programmas({ setRoute }) {
+function Programmas({ setRoute, setOdTarget }) {
   const [genre, setGenre] = React.useState('Alles');
   const [view, setView]   = React.useState('lijst');
   const { schedule, loading, error } = useSchedule();
+
+  function goToOD(showid) {
+    setOdTarget({ showid });
+    setRoute('ondemand');
+  }
 
   if (loading) return (
     <div style={{ padding:'120px 0', textAlign:'center', color:'var(--mute)' }}>
@@ -175,7 +180,9 @@ function Programmas({ setRoute }) {
         {view === 'grid' && (
           <div className="cards-grid" style={{borderTop:'1px solid var(--ink)', marginTop:0}}>
             {filtered.map(p => (
-              <div className="card" key={p.id}>
+              <div className="card" key={p.id}
+                   style={{cursor: p.isNonstop ? 'default' : 'pointer'}}
+                   onClick={() => !p.isNonstop && goToOD(p.showid)}>
                 <div className="thumb">
                   {p.imageURL
                     ? <img src={p.imageURL} alt={p.name}
@@ -199,7 +206,9 @@ function Programmas({ setRoute }) {
         {view === 'lijst' && (
           <div style={{borderTop:'1px solid var(--ink)'}}>
             {listBlocks.map((p, i) => (
-              <div key={p.id} className="prog-row">
+              <div key={p.id} className="prog-row"
+                   style={{cursor: p.isNonstop ? 'default' : 'pointer'}}
+                   onClick={() => !p.isNonstop && goToOD(p.showid)}>
                 <span className="day">{p.day}</span>
                 <span className="time">{p.time}</span>
                 <div>
@@ -227,7 +236,9 @@ function Programmas({ setRoute }) {
                   {DAYS.map(d => {
                     const p = byDaySlot[`${d}_${slot}`];
                     return (
-                      <div key={d} className="cell" title={p?.name || ''}>
+                      <div key={d} className="cell" title={p?.name || ''}
+                           style={{cursor: p && !p.isNonstop ? 'pointer' : 'default'}}
+                           onClick={() => p && !p.isNonstop && goToOD(p.showid)}>
                         {p
                           ? p.name
                           : <span style={{color:'var(--mute)', fontWeight:400}}>—</span>

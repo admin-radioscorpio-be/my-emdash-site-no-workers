@@ -14,6 +14,7 @@ function App() {
   const [playing, setPlaying] = React.useState(false);
   const [sessionFeed, setSessionFeed] = React.useState(null); // null = live stream, set = Mixcloud session
   const [odNow, setOdNow] = React.useState(null); // {episode, show} when an OD episode is loaded
+  const [odTarget, setOdTarget] = React.useState(null); // {showid} deep-link from schedule → OD
   const nowPlaying = useNowPlaying();
 
   // expose tokens via CSS vars
@@ -37,7 +38,8 @@ function App() {
       {Page
         ? <Page setRoute={setRoute} playing={playing} setPlaying={setPlaying} nowPlaying={nowPlaying}
                 sessionFeed={sessionFeed} setSessionFeed={setSessionFeed}
-                odNow={odNow} setOdNow={setOdNow}/>
+                odNow={odNow} setOdNow={setOdNow}
+                odTarget={odTarget} setOdTarget={setOdTarget}/>
         : <Stub route={route} setRoute={setRoute}/>}
 
       <Footer/>
