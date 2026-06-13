@@ -272,31 +272,6 @@ function Playlist({ setRoute, nowPlaying }) {
           </div>
         )}
 
-        {/* STATS strip ──────────── */}
-        <div style={{
-          marginTop:64, marginBottom:64,
-          display:'grid', gridTemplateColumns:'1fr 1fr 1fr',
-          border:'1px solid var(--ink)',
-        }}>
-          {[
-            ['/ TOP ARTIEST · 7 DAGEN', 'Black Country, New Road', '14× gedraaid'],
-            ['/ TOP ALBUM · 7 DAGEN',   'Diamond Jubilee',          'Cindy Lee'],
-            ['/ ONTDEKT BIJ SCORPIO',   'Maartje Vandeputte',       '12 nieuwe artiesten'],
-          ].map(([lbl, big, sub], i) => (
-            <div key={i} style={{
-              padding:'32px 28px',
-              borderRight: i < 2 ? '1px solid var(--ink)' : 0,
-            }}>
-              <div className="eyebrow" style={{color:'var(--mute)', marginBottom:16}}>{lbl}</div>
-              <div style={{
-                fontFamily:'Archivo', fontWeight:900,
-                fontSize:36, lineHeight:0.9, letterSpacing:'-0.02em',
-                textTransform:'uppercase', marginBottom:8,
-              }}>{big}</div>
-              <div className="eyebrow" style={{color:'var(--ink)'}}>{sub}</div>
-            </div>
-          ))}
-        </div>
       </main>
     </>
   );

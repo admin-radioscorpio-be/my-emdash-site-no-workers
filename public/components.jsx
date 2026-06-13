@@ -129,7 +129,7 @@ function Player({ playing, setPlaying, accent, nowPlaying, sessionFeed, setSessi
   if (odNow) return <ODPlayer odNow={odNow} playing={playing} setPlaying={setPlaying}
                               accent={accent} onClearOd={onClearOd}/>;
 
-  const [vol, setVol] = React.useState(70);
+  const [vol, setVol] = React.useState(100);
   const [bars] = React.useState(() =>
     Array.from({length: 64}, () => 0.2 + Math.random() * 0.8)
   );
@@ -297,7 +297,7 @@ function ODPlayer({ odNow, playing, setPlaying, accent, onClearOd }) {
   const { episode, show } = odNow;
   const total = episode.durationMin * 60;
   const [elapsed, setElapsed] = React.useState(0);
-  const [vol, setVol] = React.useState(70);
+  const [vol, setVol] = React.useState(100);
 
   React.useEffect(() => { setElapsed(0); }, [episode.id]);
   React.useEffect(() => {

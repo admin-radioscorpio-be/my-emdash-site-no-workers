@@ -840,6 +840,7 @@ img { display: block; max-width: 100%; }
   display: grid; place-items: center;
   border-right: var(--hair) solid var(--ink);
   position: relative;
+  overflow: hidden;
 }
 .now-big .cover .ph {
   font-family: "JetBrains Mono", monospace;
