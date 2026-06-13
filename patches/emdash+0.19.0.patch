@@ -1,10 +1,10 @@
 diff --git a/node_modules/emdash/dist/astro/routes/api/auth/oauth/_provider_.mjs b/node_modules/emdash/dist/astro/routes/api/auth/oauth/_provider_.mjs
-index d585601..1d12ed5 100644
+index d89831c..d0d0538 100644
 --- a/node_modules/emdash/dist/astro/routes/api/auth/oauth/_provider_.mjs
 +++ b/node_modules/emdash/dist/astro/routes/api/auth/oauth/_provider_.mjs
 @@ -1,6 +1,7 @@
- import { n as getPublicOrigin } from "../../../../../public-url-CseXl9Fv.mjs";
- import { t as createOAuthStateStore } from "../../../../../oauth-state-store-DpsZViTu.mjs";
+ import { n as getPublicOrigin } from "../../../../../public-url-egRHCy1m.mjs";
+ import { t as createOAuthStateStore } from "../../../../../oauth-state-store-BJ7YtrfD.mjs";
  import { createAuthorizationUrl } from "@emdash-cms/auth";
 +import { env as cfEnv } from "cloudflare:workers";
  
@@ -20,11 +20,11 @@ index d585601..1d12ed5 100644
  		const { url: authUrl } = await createAuthorizationUrl({
  			baseUrl: `${getPublicOrigin(url, emdash?.config)}/_emdash`,
 diff --git a/node_modules/emdash/dist/astro/routes/api/auth/oauth/_provider_/callback.mjs b/node_modules/emdash/dist/astro/routes/api/auth/oauth/_provider_/callback.mjs
-index 76babb9..a8e0dfc 100644
+index c18f050..113c065 100644
 --- a/node_modules/emdash/dist/astro/routes/api/auth/oauth/_provider_/callback.mjs
 +++ b/node_modules/emdash/dist/astro/routes/api/auth/oauth/_provider_/callback.mjs
-@@ -4,6 +4,7 @@ import { t as finalizeSetup } from "../../../../../../setup-complete-C6ZCLhKo.mj
- import { t as createOAuthStateStore } from "../../../../../../oauth-state-store-DpsZViTu.mjs";
+@@ -4,6 +4,7 @@ import { t as finalizeSetup } from "../../../../../../setup-complete-Yuv78yua.mj
+ import { t as createOAuthStateStore } from "../../../../../../oauth-state-store-BJ7YtrfD.mjs";
  import { createKyselyAdapter } from "@emdash-cms/auth/adapters/kysely";
  import { OAuthError, Role, handleOAuthCallback } from "@emdash-cms/auth";
 +import { env as cfEnv } from "cloudflare:workers";
@@ -41,7 +41,7 @@ index 76babb9..a8e0dfc 100644
  		const adapter = createKyselyAdapter(emdash.db);
  		const stateStore = createOAuthStateStore(emdash.db);
 diff --git a/node_modules/emdash/src/astro/routes/api/auth/oauth/[provider].ts b/node_modules/emdash/src/astro/routes/api/auth/oauth/[provider].ts
-index 0d7d8fa..f46858a 100644
+index a970688..9a45088 100644
 --- a/node_modules/emdash/src/astro/routes/api/auth/oauth/[provider].ts
 +++ b/node_modules/emdash/src/astro/routes/api/auth/oauth/[provider].ts
 @@ -9,6 +9,7 @@ import type { APIRoute } from "astro";
@@ -53,9 +53,9 @@ index 0d7d8fa..f46858a 100644
  import { getPublicOrigin } from "#api/public-url.js";
  import { createOAuthStateStore } from "#auth/oauth-state-store.js";
 @@ -98,7 +99,8 @@ export const GET: APIRoute = async ({ params, request, locals, redirect }) => {
- 		// eslint-disable-next-line typescript-eslint(no-unsafe-type-assertion) -- locals.runtime is injected by the Cloudflare adapter at runtime; not declared on App.Locals since the adapter is optional
+ 		// eslint-disable-next-line typescript/no-unsafe-type-assertion -- locals.runtime is injected by the Cloudflare adapter at runtime; not declared on App.Locals since the adapter is optional
  		const runtimeLocals = locals as unknown as { runtime?: { env?: Record<string, unknown> } };
- 		// eslint-disable-next-line typescript-eslint(no-unsafe-type-assertion) -- import.meta.env is typed as ImportMetaEnv but we need Record<string, unknown> for getOAuthConfig
+ 		// eslint-disable-next-line typescript/no-unsafe-type-assertion -- import.meta.env is typed as ImportMetaEnv but we need Record<string, unknown> for getOAuthConfig
 -		const env = runtimeLocals.runtime?.env ?? (import.meta.env as Record<string, unknown>);
 +		//const env = runtimeLocals.runtime?.env ?? (import.meta.env as Record<string, unknown>);
 +		const env = (cfEnv ?? import.meta.env) as Record<string, unknown>;
@@ -63,7 +63,7 @@ index 0d7d8fa..f46858a 100644
  
  		if (!providers[provider]) {
 diff --git a/node_modules/emdash/src/astro/routes/api/auth/oauth/[provider]/callback.ts b/node_modules/emdash/src/astro/routes/api/auth/oauth/[provider]/callback.ts
-index f7e7cc3..c010ee5 100644
+index e49c2ac..89979d2 100644
 --- a/node_modules/emdash/src/astro/routes/api/auth/oauth/[provider]/callback.ts
 +++ b/node_modules/emdash/src/astro/routes/api/auth/oauth/[provider]/callback.ts
 @@ -16,6 +16,7 @@ import {
@@ -75,9 +75,9 @@ index f7e7cc3..c010ee5 100644
  import { getPublicOrigin } from "#api/public-url.js";
  import { finalizeSetup } from "#api/setup-complete.js";
 @@ -119,7 +120,8 @@ export const GET: APIRoute = async ({ params, request, locals, session, redirect
- 		// eslint-disable-next-line typescript-eslint(no-unsafe-type-assertion) -- locals.runtime is injected by the Cloudflare adapter at runtime; not declared on App.Locals since the adapter is optional
+ 		// eslint-disable-next-line typescript/no-unsafe-type-assertion -- locals.runtime is injected by the Cloudflare adapter at runtime; not declared on App.Locals since the adapter is optional
  		const runtimeLocals = locals as unknown as { runtime?: { env?: Record<string, unknown> } };
- 		// eslint-disable-next-line typescript-eslint(no-unsafe-type-assertion) -- import.meta.env is typed as ImportMetaEnv but we need Record<string, unknown> for getOAuthConfig
+ 		// eslint-disable-next-line typescript/no-unsafe-type-assertion -- import.meta.env is typed as ImportMetaEnv but we need Record<string, unknown> for getOAuthConfig
 -		const env = runtimeLocals.runtime?.env ?? (import.meta.env as Record<string, unknown>);
 +		//const env = runtimeLocals.runtime?.env ?? (import.meta.env as Record<string, unknown>);
 +		const env = (cfEnv ?? import.meta.env) as Record<string, unknown>;
