@@ -157,7 +157,7 @@ function Playlist({ setRoute, nowPlaying }) {
             <div className="cover">
               {track?.image
                 ? <img src={track.image} alt={track.title}
-                       style={{width:'100%', height:'100%', objectFit:'cover'}}/>
+                       style={{position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover'}}/>
                 : <span className="ph">[ ALBUM ART ]</span>
               }
             </div>
