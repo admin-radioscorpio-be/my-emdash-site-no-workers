@@ -59,6 +59,37 @@ function Sessions({ sessionFeed, setSessionFeed }) {
 
   return (
     <>
+
+
+          {/* NEWSLETTER + SHOP ───────────────── */}
+        <SectHd num="01" title="Steun · Volg" />
+        <div className="dual" style={{marginBottom:64}}>
+          <div className="accent-bg">
+            <div className="eyebrow" style={{marginBottom:8}}>// T-Shirts</div>
+            <h3>Trotse<br/>SCORPIO drager?</h3>
+            <p style={{color:'var(--ink)'}}>
+              Onze nieuwe collectie is binnen. Zwart op zwart, wit op wit,
+              gedrukt in Leuven en gesigneerd door je favoriete DJ.
+            </p>
+            <button className="btn">
+              Naar de shop <Ic.arrow/>
+            </button>
+          </div>
+          <div>
+            <div className="eyebrow" style={{color:'var(--mute)', marginBottom:8}}>// Nieuwsbrief</div>
+            <h3>Wekelijks in je inbox.</h3>
+            <p>
+              Elke vrijdag een selectie van de mooiste platen, de scherpste
+              gesprekken en de gekste sessies van de week.
+            </p>
+            <input type="email" placeholder="jouw@email.be"/>
+            <button className="btn">
+              Inschrijven <Ic.arrow/>
+            </button>
+          </div>
+        </div>
+
+        
       <section data-screen-label="05 Sessions — Header">
         <div className="page-hd">
           <div>

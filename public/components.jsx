@@ -349,30 +349,17 @@ function Footer() {
             <p>Onafhankelijk gemeenschapsradio sinds 1980. Vrijwilligersradio uit Leuven, 24 uur per dag, 7 dagen per week.</p>
           </div>
           <div>
-            <h4>Luister</h4>
-            <ul>
-              <li><a>106 FM</a></li>
-              <li><a>Web stream</a></li>
-              <li><a>Apple / Android app</a></li>
-              <li><a>DAB+</a></li>
-            </ul>
+            
           </div>
           <div>
-            <h4>Ontdek</h4>
-            <ul>
-              <li><a>Programma's</a></li>
-              <li><a>Playlist</a></li>
-              <li><a>Scorpio OD</a></li>
-              <li><a>Sessions</a></li>
-              <li><a>Cultafacts</a></li>
-            </ul>
+           
           </div>
           <div>
             <h4>Over</h4>
             <ul>
-              <li><a>Wie zijn we</a></li>
+              <li><a>Over ons</a></li>
               <li><a>Word vrijwilliger</a></li>
-              <li><a>Studio</a></li>
+              <li><a>Steun</a></li>
               <li><a>Contact</a></li>
             </ul>
           </div>
@@ -382,7 +369,6 @@ function Footer() {
               <li><a>Instagram</a></li>
               <li><a>Facebook</a></li>
               <li><a>Mixcloud</a></li>
-              <li><a>YouTube</a></li>
             </ul>
           </div>
         </div>
