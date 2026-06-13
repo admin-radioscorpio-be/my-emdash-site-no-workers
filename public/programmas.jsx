@@ -99,8 +99,9 @@ function useSchedule() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function Programmas({ setRoute, setOdTarget }) {
-  const [genre, setGenre] = React.useState('Alles');
-  const [view, setView]   = React.useState('lijst');
+  const [genre, setGenre]           = React.useState('Alles');
+  const [view, setView]             = React.useState('lijst');
+  const [hoveredGroup, setHovered]  = React.useState(null);
   const { schedule, loading, error } = useSchedule();
 
   function goToOD(showid) {
@@ -225,32 +226,67 @@ function Programmas({ setRoute, setOdTarget }) {
         )}
 
         {/* Rooster view ────────────────────────────────────── */}
-        {view === 'rooster' && (
-          <div className="tg-wrap" style={{borderTop:'1px solid var(--ink)'}}>
-            <div className="tg">
-              <div className="h">/ tijd</div>
-              {DAYS.map(d => <div key={d} className="h day">{d}</div>)}
-              {slots.map(slot => (
-                <React.Fragment key={slot}>
-                  <div className="t">{slot}</div>
-                  {DAYS.map(d => {
-                    const p = byDaySlot[`${d}_${slot}`];
-                    return (
-                      <div key={d} className="cell" title={p?.name || ''}
-                           style={{cursor: p && !p.isNonstop ? 'pointer' : 'default'}}
-                           onClick={() => p && !p.isNonstop && goToOD(p.showid)}>
-                        {p
-                          ? p.name
-                          : <span style={{color:'var(--mute)', fontWeight:400}}>—</span>
-                        }
+        {view === 'rooster' && (() => {
+          function toMins(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
+          // Build map: "DAY_slot" → parent block (for continuation slots)
+          const contMap = new Map();
+          allBlocks.forEach(b => {
+            const startMins = toMins(b.start);
+            let endMins = toMins(b.end);
+            if (endMins <= startMins) endMins += 1440;
+            slots.forEach(slot => {
+              let slotM = toMins(slot);
+              if (slotM <= startMins) slotM += 1440;
+              if (slotM > startMins && slotM < endMins) contMap.set(`${b.day}_${slot}`, b);
+            });
+          });
+          return (
+            <div className="tg-wrap" style={{borderTop:'1px solid var(--ink)'}}>
+              <div className="tg">
+                <div className="h">/ tijd</div>
+                {DAYS.map(d => <div key={d} className="h day">{d}</div>)}
+                {slots.map((slot, si) => {
+                  const nextSlot = slots[si + 1];
+                  return (
+                    <React.Fragment key={slot}>
+                      <div className="t" style={nextSlot && DAYS.some(d => contMap.has(`${d}_${nextSlot}`)) ? {borderBottom:'none'} : {}}>
+                        {slot}
                       </div>
-                    );
-                  })}
-                </React.Fragment>
-              ))}
+                      {DAYS.map(d => {
+                        const cellKey    = `${d}_${slot}`;
+                        const isCont     = contMap.has(cellKey);
+                        const parentBlock = isCont ? contMap.get(cellKey) : byDaySlot[cellKey];
+                        const groupKey   = parentBlock ? `${d}_${parentBlock.start}` : null;
+                        const isHovered  = groupKey && hoveredGroup === groupKey;
+                        const nextCont   = nextSlot ? contMap.get(`${d}_${nextSlot}`) : null;
+                        const nextIsCont = nextCont && parentBlock && nextCont.start === parentBlock.start;
+                        return (
+                          <div key={d} className="cell"
+                               title={parentBlock ? `${parentBlock.name} · ${parentBlock.start}–${parentBlock.end}` : ''}
+                               style={{
+                                 cursor: parentBlock && !parentBlock.isNonstop ? 'pointer' : 'default',
+                                 ...(nextIsCont ? {borderBottom:'none'} : {}),
+                                 ...(isHovered  ? {background:'var(--ink)', color:'var(--accent)'} : {}),
+                               }}
+                               onMouseEnter={() => groupKey && setHovered(groupKey)}
+                               onMouseLeave={() => setHovered(null)}
+                               onClick={() => parentBlock && !parentBlock.isNonstop && goToOD(parentBlock.showid)}>
+                            {isCont
+                              ? null
+                              : parentBlock
+                                ? parentBlock.name
+                                : <span style={{color:'var(--mute)', fontWeight:400}}>—</span>
+                            }
+                          </div>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Spotlight bar ─────────────────────────────────── */}
         <div style={{
