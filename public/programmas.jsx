@@ -58,7 +58,7 @@ function useSchedule() {
               imageURL:  b.imageURL || '',
               linkURL:   b.linkURL  || '',
               isNonstop: b.showid === NONSTOP_ID,
-              genre:     null, // not available yet
+              genres:    b.genres || [],
             });
           });
         });
@@ -86,7 +86,9 @@ function useSchedule() {
           }
         });
 
-        setSchedule({ allBlocks, byDaySlot, slots, uniqueShows,
+        const allGenres = json?.programmatielijn?.allGenres ?? [];
+
+        setSchedule({ allBlocks, byDaySlot, slots, uniqueShows, allGenres,
                       weekLabel: fmtWeekLabel(details, nav) });
         setLoading(false);
       })
@@ -121,16 +123,18 @@ function Programmas({ setRoute, setOdTarget }) {
     </div>
   );
 
-  const { allBlocks, byDaySlot, slots, uniqueShows, weekLabel } = schedule;
+  const { allBlocks, byDaySlot, slots, uniqueShows, allGenres, weekLabel } = schedule;
 
-  // Genre filter — genre field is null for now, so only 'Alles' returns results
+  const genreChips = ['Alles', ...allGenres];
+
+  // Genre filter
   const filtered = genre === 'Alles'
     ? uniqueShows
-    : uniqueShows.filter(p => p.genre === genre);
+    : uniqueShows.filter(p => p.genres.includes(genre));
 
-  // Lijst: all blocks sorted by day order then time
+  // Lijst: blocks sorted by day order then time, filtered by genre
   const dayOrder = Object.fromEntries(DAYS.map((d, i) => [d, i]));
-  const listBlocks = allBlocks
+  const listBlocks = (genre === 'Alles' ? allBlocks : allBlocks.filter(p => p.genres.includes(genre)))
     .sort((a, b) => dayOrder[a.day] - dayOrder[b.day] || a.start.localeCompare(b.start));
 
   return (
@@ -155,7 +159,7 @@ function Programmas({ setRoute, setOdTarget }) {
 
         {/* Filter chips ─────────── */}
         <div className="chips">
-          {GENRES.map(g => (
+          {genreChips.map(g => (
             <button key={g}
                     className={"chip" + (genre === g ? ' is-active' : '')}
                     onClick={() => setGenre(g)}>
@@ -196,7 +200,7 @@ function Programmas({ setRoute, setOdTarget }) {
                 </div>
                 <div className="foot">
                   <span>{p.day} · {p.time}</span>
-                  <span style={{color:'var(--mute)'}}>{p.genre ?? '—'}</span>
+                  <span style={{color:'var(--mute)'}}>{p.genres.length ? p.genres.join(', ') : '—'}</span>
                 </div>
               </div>
             ))}
@@ -218,7 +222,7 @@ function Programmas({ setRoute, setOdTarget }) {
                     {p.date}
                   </div>
                 </div>
-                <span className="gen">{p.genre ?? '—'}</span>
+                <span className="gen">{p.genres.length ? p.genres.join(', ') : '—'}</span>
                 <span className="arr">→</span>
               </div>
             ))}
