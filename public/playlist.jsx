@@ -153,11 +153,11 @@ function Playlist({ setRoute, nowPlaying }) {
       {/* NOW PLAYING — hidden in archive mode */}
       {!isArchive && (
         <div data-screen-label="03 Playlist — Now playing">
-          <div className="now-big" style={{maxWidth:1440, margin:'0 auto'}}>
+          <div className="now-big now-live" style={{maxWidth:1440, margin:'0 auto'}}>
             <div className="cover">
               {track?.image
                 ? <img src={track.image} alt={track.title}
-                       style={{position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover'}}/>
+                       style={{width:'100%', height:'100%', objectFit:'cover'}}/>
                 : <span className="ph">[ ALBUM ART ]</span>
               }
             </div>
