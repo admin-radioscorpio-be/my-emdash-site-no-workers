@@ -10,7 +10,7 @@ function dateStr() {
 function parseInsertTs(ts) {
   return new Date(ts.replace(' ', 'T') + 'Z'); // treat as UTC
 }
-
+   
 function fmtTime(ts) {
   return parseInsertTs(ts).toLocaleTimeString('nl-BE', {
     hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Brussels',
