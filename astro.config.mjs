@@ -2,7 +2,7 @@ import cloudflare from "@astrojs/cloudflare";
 import react from "@astrojs/react";
 import { d1, r2, sandbox } from "@emdash-cms/cloudflare";
 import { formsPlugin } from "@emdash-cms/plugin-forms";
-import { webhookNotifierPlugin } from "@emdash-cms/plugin-webhook-notifier";
+import webhookNotifier from "@emdash-cms/plugin-webhook-notifier";
 import { google } from "emdash/auth/providers/google";
 import { defineConfig, fontProviders } from "astro/config";
 import emdash from "emdash/astro";
@@ -21,7 +21,7 @@ export default defineConfig({
 			authProviders: [google()],
 			storage: r2({ binding: "MEDIA" }),
 			plugins: [formsPlugin()],
-			sandboxed: [webhookNotifierPlugin()],
+			sandboxed: [webhookNotifier],
 			sandboxRunner: sandbox(),
 			marketplace: "https://marketplace.emdashcms.com",
 		}),
