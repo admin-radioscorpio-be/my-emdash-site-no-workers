@@ -264,6 +264,9 @@ function Programmas({ setRoute, setOdTarget }) {
                         const isHovered  = groupKey && hoveredGroup === groupKey;
                         const nextCont   = nextSlot ? contMap.get(`${d}_${nextSlot}`) : null;
                         const nextIsCont = nextCont && parentBlock && nextCont.start === parentBlock.start;
+                        const genreActive = genre !== 'Alles';
+                        const isMatch = genreActive && parentBlock && parentBlock.genres.includes(genre);
+                        const isDim   = genreActive && parentBlock && !parentBlock.genres.includes(genre);
                         return (
                           <div key={d} className="cell"
                                title={parentBlock ? `${parentBlock.name} · ${parentBlock.start}–${parentBlock.end}` : ''}
@@ -271,6 +274,8 @@ function Programmas({ setRoute, setOdTarget }) {
                                  cursor: parentBlock && !parentBlock.isNonstop ? 'pointer' : 'default',
                                  ...(nextIsCont ? {borderBottom:'none'} : {}),
                                  ...(isHovered  ? {background:'var(--ink)', color:'var(--accent)'} : {}),
+                                 ...(!isHovered && isMatch ? {background:'var(--accent)', color:'var(--ink)'} : {}),
+                                 ...(!isHovered && isDim   ? {opacity:0.2} : {}),
                                }}
                                onMouseEnter={() => groupKey && setHovered(groupKey)}
                                onMouseLeave={() => setHovered(null)}
