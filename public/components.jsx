@@ -49,27 +49,9 @@ function TopNav({ route, setRoute }) {
 
 // ─── Ticker ───────────────────────────────────────────────────────────
 function Ticker() {
-  const items = [
-    'NU OP ANTENNE — Dry Cleaning — Hit My Head All Day',
-    'STRAKS 00:00 — Vinylkroniek met Joris Mertens',
-    '106 FM — STREAM 192KBPS',
-    'SCORPIO SESSIONS // NIEUWE OPNAME ONLINE',
-    'CULTAFACTS // De agenda van deze week',
-    'DE BESTE 106 — STEM NU VOOR JE FAVORIET',
-    'NU OP ANTENNE — Dry Cleaning — Hit My Head All Day',
-    'STRAKS 00:00 — Vinylkroniek met Joris Mertens',
-    '106 FM — STREAM 192KBPS',
-    'SCORPIO SESSIONS // NIEUWE OPNAME ONLINE',
-    'CULTAFACTS // De agenda van deze week',
-    'DE BESTE 106 — STEM NU VOOR JE FAVORIET',
-  ];
   return (
     <div className="ticker">
-      <div className="track">
-        {items.map((t, i) => (
-          <span key={i}>{t}<span className="sep">✦</span></span>
-        ))}
-      </div>
+      <div className="track"/>
     </div>
   );
 }
