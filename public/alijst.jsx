@@ -96,7 +96,7 @@ function ALijst({ setRoute, navigate, hashParam }) {
       <>
         <div className={"al-cover-art " + tones[n % 3]}>
           {c.coverArtUrl && <img src={c.coverArtUrl} alt={`${c.artist} — ${c.title}`} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/>}
-          <div className="tex"/>
+          {!c.coverArtUrl && <div className="tex"/>}
           <span className="tag">Uitgelicht</span>
           {!c.coverArtUrl && <span className="ph">[ Cover ]</span>}
         </div>
