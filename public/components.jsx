@@ -1,5 +1,16 @@
 // components.jsx — shared bits
 
+// ─── Share helper ─────────────────────────────────────────────────────
+async function shareUrl(url) {
+  try {
+    if (navigator.share) {
+      await navigator.share({ url, title: 'Radio Scorpio 106 FM' });
+    } else {
+      await navigator.clipboard.writeText(url);
+    }
+  } catch (_) {}
+}
+
 // ─── Icons (inline svg) ────────────────────────────────────────────────
 const Ic = {
   play:   (p) => <svg viewBox="0 0 16 16" className={"ic-svg "+(p.cls||"")} {...p}><path d="M3 2 L13 8 L3 14 Z" fill="currentColor"/></svg>,
@@ -14,7 +25,7 @@ const Ic = {
 };
 
 // ─── Top nav ──────────────────────────────────────────────────────────
-function TopNav({ route, setRoute }) {
+function TopNav({ route, navigate }) {
   const items = [
     ['home', 'Home'],
     ['programmas', "Programma's"],
@@ -25,14 +36,14 @@ function TopNav({ route, setRoute }) {
   return (
     <header className="topnav">
       <div className="inner">
-        <a className="brand" onClick={() => setRoute('home')} style={{cursor:'pointer'}}>
+        <a className="brand" onClick={() => navigate('home')} style={{cursor:'pointer'}}>
           <img src="assets/logo.png" alt="Radio Scorpio 106 FM"/>
         </a>
         <nav>
           {items.map(([k, lbl]) => (
             <a key={k}
                className={route === k ? 'is-active' : ''}
-               onClick={() => setRoute(k)}
+               onClick={() => navigate(k)}
                style={{cursor:'pointer'}}>{lbl}</a>
           ))}
         </nav>
@@ -259,7 +270,8 @@ function Player({ playing, setPlaying, accent, nowPlaying, sessionFeed, setSessi
               <Ic.vol/>
               <input type="range" min="0" max="100" value={vol} onChange={e => setVol(+e.target.value)} />
             </div>
-            <button className="ic" aria-label="Delen"><Ic.share/></button>
+            <button className="ic" aria-label="Delen"
+                    onClick={() => shareUrl(window.location.href)}><Ic.share/></button>
           </>
         )}
       </div>
@@ -319,7 +331,10 @@ function ODPlayer({ odNow, playing, setPlaying, accent, onClearOd }) {
           <Ic.vol/>
           <input type="range" min="0" max="100" value={vol} onChange={e => setVol(+e.target.value)} />
         </div>
-        <button className="ic" aria-label="Delen"><Ic.share/></button>
+        <button className="ic" aria-label="Delen"
+                onClick={() => shareUrl(
+                  `${location.origin}${location.pathname}#/ondemand/${show.showid}/${episode.id}`
+                )}><Ic.share/></button>
       </div>
     </footer>
   );

@@ -1,7 +1,10 @@
 // alijst.jsx — A-Lijst: maandelijkse curatorselectie
 
-function ALijst({ setRoute }) {
-  const [edId, setEdId] = React.useState(ALIJST.current);
+function ALijst({ setRoute, navigate, hashParam }) {
+  const [edId, setEdId] = React.useState(() => {
+    if (hashParam && ALIJST.editions.some(e => e.id === hashParam)) return hashParam;
+    return ALIJST.current;
+  });
   const editions = ALIJST.editions;
   const idx = Math.max(0, editions.findIndex(e => e.id === edId));
   const ed = editions[idx];
@@ -11,6 +14,7 @@ function ALijst({ setRoute }) {
   const listRef = React.useRef(null);
   const go = (id, scrollToList) => {
     setEdId(id);
+    navigate('alijst', id);
     if (scrollToList && listRef.current) {
       const y = listRef.current.getBoundingClientRect().top + window.scrollY - 80;
       window.scrollTo({ top: y, behavior: 'smooth' });

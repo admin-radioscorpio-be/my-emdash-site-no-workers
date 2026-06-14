@@ -91,10 +91,10 @@ function usePlaylist(archiveDate, archiveHour, liveTrackTitle) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function Playlist({ setRoute, nowPlaying }) {
+function Playlist({ setRoute, navigate, hashParam, nowPlaying }) {
   const [q, setQ]                     = React.useState('');
-  const [archiveDate, setArchiveDate] = React.useState('');
-  const [archiveHour, setArchiveHour] = React.useState('');
+  const [archiveDate, setArchiveDate] = React.useState(() => hashParam ? (hashParam.split('/')[0] || '') : '');
+  const [archiveHour, setArchiveHour] = React.useState(() => hashParam ? (hashParam.split('/')[1] ?? '') : '');
   const { track }                     = nowPlaying;
 
   const isArchive = archiveDate && archiveHour !== '';
@@ -113,7 +113,7 @@ function Playlist({ setRoute, nowPlaying }) {
     return artist.toLowerCase().includes(s) || title.toLowerCase().includes(s);
   });
 
-  function clearArchive() { setArchiveDate(''); setArchiveHour(''); }
+  function clearArchive() { setArchiveDate(''); setArchiveHour(''); navigate('playlist'); }
 
   const hourLabel = h => String(h).padStart(2, '0') + ':00';
 
@@ -200,7 +200,10 @@ function Playlist({ setRoute, nowPlaying }) {
             <select
               value={archiveHour}
               disabled={!archiveDate}
-              onChange={e => setArchiveHour(e.target.value)}
+              onChange={e => {
+                setArchiveHour(e.target.value);
+                if (archiveDate && e.target.value !== '') navigate('playlist', `${archiveDate}/${e.target.value}`);
+              }}
             >
               <option value="">uur</option>
               {Array.from({length: 24}, (_, h) => (

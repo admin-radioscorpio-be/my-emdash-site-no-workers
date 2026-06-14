@@ -247,12 +247,20 @@ function ODShows({ shows, loading, error, tag, favOnly, fav, onOpen }) {
 }
 
 // ─── Episode list ─────────────────────────────────────────────────────────
-function ODEpisodes({ show, fav, onOpen, onBack }) {
+function ODEpisodes({ show, fav, onOpen, onBack, pendingEpisodeId, onPendingResolved }) {
   const [season, setSeason]   = React.useState('Alles');
   const seasons               = useODSeasons(show.showid);
   const { episodes, loading, error, nextCursor, loadMore, loadingMore } = useODEpisodes(show.showid, season);
   const sentinel              = React.useRef(null);
   const loadMoreRef           = React.useRef(loadMore);
+
+  // Auto-select episode from deep link: keep paginating until found
+  React.useEffect(() => {
+    if (!pendingEpisodeId || loading || loadingMore) return;
+    const ep = episodes.find(e => e.id === pendingEpisodeId);
+    if (ep) { onOpen(ep); onPendingResolved?.(); return; }
+    if (nextCursor) loadMore();
+  }, [pendingEpisodeId, episodes, loading, loadingMore, nextCursor]);
 
   // Per-season descending episode numbers (oldest = #1, newest = #N)
   const epNums = React.useMemo(() => {
@@ -479,15 +487,26 @@ function ODDetail({ episode, show, fav, onBack, onPlay, isCurrent }) {
 }
 
 // ─── Page root ────────────────────────────────────────────────────────────
-function OnDemand({ setRoute, sessionFeed, setSessionFeed, setPlaying, odTarget, setOdTarget }) {
-  const fav                           = useODFavorites();
-  const [view, setView]               = React.useState('shows');
-  const [tag, setTag]                 = React.useState('Alles');
-  const [favOnly, setFavOnly]         = React.useState(false);
-  const [show, setShow]               = React.useState(null);
-  const [episode, setEpisode]         = React.useState(null);
-  const [toast, setToast]             = React.useState(null);
-  const { shows, loading, error }     = useODShows();
+function OnDemand({ setRoute, navigate, hashParam, sessionFeed, setSessionFeed, setPlaying, odTarget, setOdTarget }) {
+  const fav                              = useODFavorites();
+  const [view, setView]                  = React.useState('shows');
+  const [tag, setTag]                    = React.useState('Alles');
+  const [favOnly, setFavOnly]            = React.useState(false);
+  const [show, setShow]                  = React.useState(null);
+  const [episode, setEpisode]            = React.useState(null);
+  const [toast, setToast]                = React.useState(null);
+  const [pendingEpisodeId, setPendingEpisodeId] = React.useState(null);
+  const { shows, loading, error }        = useODShows();
+
+  // On mount: parse hash deep-link (e.g. "#/ondemand/42" or "#/ondemand/42/1337")
+  React.useEffect(() => {
+    if (!hashParam) return;
+    const parts = hashParam.split('/');
+    const showid = Number(parts[0]);
+    if (!showid) return;
+    const episodeid = parts[1] ? Number(parts[1]) : null;
+    setOdTarget({ showid, episodeid });
+  }, []);
 
   // Collect all unique tags from loaded shows for the filter chips
   const allTags = React.useMemo(() => {
@@ -495,16 +514,31 @@ function OnDemand({ setRoute, sessionFeed, setSessionFeed, setPlaying, odTarget,
     return ['Alles', ...[...tags].sort()];
   }, [shows]);
 
-  // Deep-link from schedule: once shows are loaded, auto-navigate to the target show
+  // Deep-link: once shows are loaded, navigate to the target show (and optionally episode)
   React.useEffect(() => {
     if (!odTarget || loading || !shows.length) return;
     const match = shows.find(s => s.showid === odTarget.showid);
-    if (match) { setShow(match); setView('episodes'); window.scrollTo({ top: 0 }); }
+    if (match) {
+      setShow(match);
+      setView('episodes');
+      if (odTarget.episodeid) setPendingEpisodeId(odTarget.episodeid);
+      window.scrollTo({ top: 0 });
+    }
     setOdTarget(null);
   }, [odTarget, loading, shows]);
 
-  const openShow = (s) => { setShow(s); setView('episodes'); window.scrollTo({ top: 0 }); };
-  const openEp   = (ep) => { setEpisode(ep); setView('detail'); window.scrollTo({ top: 0 }); };
+  const openShow = (s) => {
+    setShow(s);
+    setView('episodes');
+    navigate('ondemand', String(s.showid));
+    window.scrollTo({ top: 0 });
+  };
+  const openEp = (ep) => {
+    setEpisode(ep);
+    setView('detail');
+    navigate('ondemand', `${show.showid}/${ep.id}`);
+    window.scrollTo({ top: 0 });
+  };
 
   const play = (ep, s) => {
     setSessionFeed({
@@ -570,12 +604,16 @@ function OnDemand({ setRoute, sessionFeed, setSessionFeed, setPlaying, odTarget,
       </main>
 
       {view === 'episodes' && show && (
-        <ODEpisodes show={show} fav={fav} onOpen={openEp} onBack={() => setView('shows')}/>
+        <ODEpisodes show={show} fav={fav} onOpen={openEp}
+                    pendingEpisodeId={pendingEpisodeId}
+                    onPendingResolved={() => setPendingEpisodeId(null)}
+                    onBack={() => { setView('shows'); navigate('ondemand'); }}/>
       )}
 
       {view === 'detail' && episode && show && (
         <ODDetail episode={episode} show={show} fav={fav}
-                  onBack={() => setView('episodes')} onPlay={play}
+                  onBack={() => { setView('episodes'); navigate('ondemand', String(show.showid)); }}
+                  onPlay={play}
                   isCurrent={!!episode.mixcloudURL && sessionFeed?.feed === mixcloudFeed(episode.mixcloudURL)}/>
       )}
 

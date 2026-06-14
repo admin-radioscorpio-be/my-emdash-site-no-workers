@@ -100,7 +100,7 @@ function useSchedule() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function Programmas({ setRoute, setOdTarget }) {
+function Programmas({ setRoute, navigate, setOdTarget }) {
   const [genre, setGenre]           = React.useState('Alles');
   const [view, setView]             = React.useState('lijst');
   const [hoveredGroup, setHovered]  = React.useState(null);
@@ -108,7 +108,7 @@ function Programmas({ setRoute, setOdTarget }) {
 
   function goToOD(showid) {
     setOdTarget({ showid });
-    setRoute('ondemand');
+    navigate('ondemand');
   }
 
   if (loading) return (
