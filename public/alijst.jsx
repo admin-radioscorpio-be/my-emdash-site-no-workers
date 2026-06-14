@@ -5,7 +5,7 @@ const ALIJST_API = 'https://public.radioscorpio.be/api/alijst';
 function normCovers(highlights) {
   const sorted = [...(highlights || [])].sort((a, b) => a.position - b.position);
   while (sorted.length < 6) sorted.push({ artist: '', title: '', link: '' });
-  return sorted.map(h => ({ artist: h.artist || '', title: h.title || '', url: h.link || '' }));
+  return sorted.map(h => ({ artist: h.artist || '', title: h.title || '', url: h.link || '', coverArtUrl: h.cover_art_url || '' }));
 }
 
 function normTracks(tracks) {
@@ -95,10 +95,11 @@ function ALijst({ setRoute, navigate, hashParam }) {
     const inner = (
       <>
         <div className={"al-cover-art " + tones[n % 3]}>
+          {c.coverArtUrl && <img src={c.coverArtUrl} alt={`${c.artist} — ${c.title}`} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/>}
           <div className="tex"/>
           <div className="gnum">{String(n + 1).padStart(2, '0')}</div>
           <span className="tag">Uitgelicht</span>
-          <span className="ph">[ Cover ]</span>
+          {!c.coverArtUrl && <span className="ph">[ Cover ]</span>}
         </div>
         <div className="al-cover-cap">
           <div className="who">
