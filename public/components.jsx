@@ -49,6 +49,7 @@ function TopNav({ route, navigate }) {
         </nav>
         <div className="util">
           <button className="ic" aria-label="Zoeken"><Ic.search/></button>
+          <button className="ic" aria-label="Delen" onClick={() => shareUrl(window.location.href)}><Ic.share/></button>
           <a href="/_emdash/api/auth/oauth/google" className="ic" aria-label="Inloggen"><Ic.user/></a>
         </div>
       </div>
@@ -270,8 +271,6 @@ function Player({ playing, setPlaying, accent, nowPlaying, sessionFeed, setSessi
               <Ic.vol/>
               <input type="range" min="0" max="100" value={vol} onChange={e => setVol(+e.target.value)} />
             </div>
-            <button className="ic" aria-label="Delen"
-                    onClick={() => shareUrl(window.location.href)}><Ic.share/></button>
           </>
         )}
       </div>
@@ -331,10 +330,6 @@ function ODPlayer({ odNow, playing, setPlaying, accent, onClearOd }) {
           <Ic.vol/>
           <input type="range" min="0" max="100" value={vol} onChange={e => setVol(+e.target.value)} />
         </div>
-        <button className="ic" aria-label="Delen"
-                onClick={() => shareUrl(
-                  `${location.origin}${location.pathname}#/ondemand/${show.showid}/${episode.id}`
-                )}><Ic.share/></button>
       </div>
     </footer>
   );
