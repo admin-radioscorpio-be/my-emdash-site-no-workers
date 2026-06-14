@@ -1,15 +1,54 @@
 // alijst.jsx — A-Lijst: maandelijkse curatorselectie
 
+const ALIJST_API = 'https://public.radioscorpio.be/api/alijst';
+
+function normCovers(highlights) {
+  const sorted = [...(highlights || [])].sort((a, b) => a.position - b.position);
+  while (sorted.length < 6) sorted.push({ artist: '', title: '', link: '' });
+  return sorted.map(h => ({ artist: h.artist || '', title: h.title || '', url: h.link || '' }));
+}
+
+function normTracks(tracks) {
+  return [...(tracks || [])].sort((a, b) => a.position - b.position)
+    .map(t => ({ artist: t.artist || '', title: t.title || '', url: t.link || '' }));
+}
+
 function ALijst({ setRoute, navigate, hashParam }) {
-  const [edId, setEdId] = React.useState(() => {
-    if (hashParam && ALIJST.editions.some(e => e.id === hashParam)) return hashParam;
-    return ALIJST.current;
-  });
-  const editions = ALIJST.editions;
-  const idx = Math.max(0, editions.findIndex(e => e.id === edId));
-  const ed = editions[idx];
-  const newer = editions[idx - 1]; // editions sorted newest-first
-  const older = editions[idx + 1];
+  const [editions, setEditions] = React.useState([]);
+  const [edId, setEdId] = React.useState(null);
+  const [cache, setCache] = React.useState({});
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadAll() {
+      try {
+        const r = await fetch(`${ALIJST_API}/lists`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const { lists } = await r.json();
+        if (cancelled) return;
+
+        const details = await Promise.all(
+          lists.map(e => fetch(`${ALIJST_API}/list/${e.id}`).then(r => r.json()))
+        );
+        if (cancelled) return;
+
+        const cacheMap = Object.fromEntries(details.map(d => [d.id, d]));
+        setCache(cacheMap);
+        setEditions(lists);
+        const fromHash = hashParam && lists.find(e => String(e.id) === String(hashParam));
+        const initial = (fromHash || lists[0] || {}).id;
+        setEdId(initial != null ? initial : null);
+      } catch (e) {
+        if (!cancelled) setError(e.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    loadAll();
+    return () => { cancelled = true; };
+  }, []);
 
   const listRef = React.useRef(null);
   const go = (id, scrollToList) => {
@@ -23,18 +62,39 @@ function ALijst({ setRoute, navigate, hashParam }) {
     }
   };
 
-  const topCovers = ed.covers.slice(0, 3);
-  const botCovers = ed.covers.slice(3, 6);
-  const tones = ['t-ink', 't-accent', 't-paper'];
+  if (loading) return (
+    <div className="shell" style={{padding:'4rem 0', textAlign:'center', color:'var(--mute)'}}>
+      Laden…
+    </div>
+  );
+  if (error) return (
+    <div className="shell" style={{padding:'4rem 0', textAlign:'center', color:'var(--mute)'}}>
+      Kon de A-Lijst niet laden.
+    </div>
+  );
+  if (!edId || !cache[edId]) return null;
 
-  const half = Math.ceil(ed.tracks.length / 2);
-  const cols = [ed.tracks.slice(0, half), ed.tracks.slice(half)];
+  const idx = editions.findIndex(e => e.id === edId);
+  const ed = cache[edId];
+  const newer = editions[idx - 1]; // editions sorted newest-first
+  const older = editions[idx + 1];
+
+  const month     = alMonthName(ed.month);
+  const year      = alYear(ed.month);
+  const editionNo = alEditionNo(ed.month);
+  const covers    = normCovers(ed.highlights);
+  const tracks    = normTracks(ed.tracks);
+  const topCovers = covers.slice(0, 3);
+  const botCovers = covers.slice(3, 6);
+  const tones     = ['t-ink', 't-accent', 't-paper'];
+  const half      = Math.ceil(tracks.length / 2);
+  const cols      = [tracks.slice(0, half), tracks.slice(half)];
 
   const Cover = (c, i, base) => {
     const n = base + i;
     const inner = (
       <>
-        <div className={"al-cover-art " + tones[(n) % 3]}>
+        <div className={"al-cover-art " + tones[n % 3]}>
           <div className="tex"/>
           <div className="gnum">{String(n + 1).padStart(2, '0')}</div>
           <span className="tag">Uitgelicht</span>
@@ -89,11 +149,11 @@ function ALijst({ setRoute, navigate, hashParam }) {
           </div>
 
           <div className="al-current">
-            <div className="mo">{ed.month}</div>
-            <div className="yr">{ed.year}</div>
+            <div className="mo">{month}</div>
+            <div className="yr">{year}</div>
             <div className="stat">
-              <span>Editie {ed.editionNo}</span>
-              <span>{ed.tracks.length} tracks</span>
+              <span>Editie {editionNo}</span>
+              <span>{tracks.length} tracks</span>
             </div>
             <div className="al-step">
               <button onClick={() => older && go(older.id)} disabled={!older}>
@@ -113,9 +173,9 @@ function ALijst({ setRoute, navigate, hashParam }) {
           <span className="al-edchip label">/ Edities</span>
           {editions.map(e => (
             <button key={e.id}
-                    className={"al-edchip" + (e.id === ed.id ? ' is-active' : '')}
+                    className={"al-edchip" + (e.id === edId ? ' is-active' : '')}
                     onClick={() => go(e.id)}>
-              {e.monthShort} {String(e.year).slice(2)}
+              {alMonthShort(e.month)} {String(alYear(e.month)).slice(2)}
             </button>
           ))}
         </div>
@@ -130,8 +190,8 @@ function ALijst({ setRoute, navigate, hashParam }) {
 
         {/* THE LIST ───────────────────────────────────────── */}
         <div ref={listRef}>
-          <SectHd num={ed.editionNo}
-                   title={<>De lijst<br/><span style={{color:'var(--mute)'}}>{ed.month} {ed.year}</span></>}/>
+          <SectHd num={editionNo}
+                   title={<>De lijst<br/><span style={{color:'var(--mute)'}}>{month} {year}</span></>}/>
           <div className="al-list" style={{marginTop:-24}} data-screen-label="A-Lijst — Tracklijst">
             {cols.map((col, ci) => (
               <div className="col" key={ci}>
@@ -150,23 +210,30 @@ function ALijst({ setRoute, navigate, hashParam }) {
         <div data-screen-label="A-Lijst — Archief">
           <SectHd num="//" title="Archief" />
           <div className="al-arch-grid" style={{marginTop:-24, marginBottom:64}}>
-            {editions.map(e => (
-              <div key={e.id}
-                   className={"al-arch" + (e.id === ed.id ? ' is-active' : '')}
-                   onClick={() => go(e.id, true)}>
-                <div className="eno">Editie {e.editionNo}</div>
-                <div className="al-arch-sw">
-                  {e.covers.map((c, i) => (
-                    <span key={i} className={['s-ink','s-accent','s-paper'][i % 3]}/>
-                  ))}
+            {editions.map(e => {
+              const eCovers  = normCovers((cache[e.id] || {}).highlights);
+              const eTracks  = normTracks((cache[e.id] || {}).tracks);
+              const eEdNo    = alEditionNo(e.month);
+              const eMonth   = alMonthName(e.month);
+              const eYear    = alYear(e.month);
+              return (
+                <div key={e.id}
+                     className={"al-arch" + (e.id === edId ? ' is-active' : '')}
+                     onClick={() => go(e.id, true)}>
+                  <div className="eno">Editie {eEdNo}</div>
+                  <div className="al-arch-sw">
+                    {eCovers.map((c, i) => (
+                      <span key={i} className={['s-ink','s-accent','s-paper'][i % 3]}/>
+                    ))}
+                  </div>
+                  <div className="mo">{eMonth}<br/>{eYear}</div>
+                  <div className="al-arch-foot">
+                    <span>{eTracks.length} tracks</span>
+                    <span className="go">{e.id === edId ? 'Nu' : 'Bekijk →'}</span>
+                  </div>
                 </div>
-                <div className="mo">{e.month}<br/>{e.year}</div>
-                <div className="al-arch-foot">
-                  <span>{e.tracks.length} tracks</span>
-                  <span className="go">{e.id === ed.id ? 'Nu' : 'Bekijk →'}</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </main>
