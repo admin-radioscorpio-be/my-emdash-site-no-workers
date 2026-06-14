@@ -60,10 +60,6 @@ function Home({ setRoute, playing, setPlaying, nowPlaying }) {
           <div className="lbl">{upcoming ? `Straks · ${upcoming.start}` : 'Straks'}</div>
           <div className="v">{upcoming?.name ?? '—'}</div>
         </div>
-        <div>
-          <div className="lbl">Daarna</div>
-          <div className="v" style={{color:'var(--mute)'}}>—</div>
-        </div>
       </section>
 
       {/* MAIN GRID ─────────────────────────────────────────── */}

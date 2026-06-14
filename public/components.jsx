@@ -20,9 +20,7 @@ function TopNav({ route, setRoute }) {
     ['programmas', "Programma's"],
     ['playlist', 'Playlist'],
     ['ondemand', 'On demand'],
-    ['sessions', 'Sessions'],
-    ['cultafacts', 'Cultafacts'],
-    ['shop', 'Shop'],
+    ['alijst', 'A-Lijst'],
   ];
   return (
     <header className="topnav">

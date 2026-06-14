@@ -28,7 +28,7 @@ function App() {
     window.scrollTo({ top: 0 });
   }, [route]);
 
-  const Page = { home: Home, programmas: Programmas, playlist: Playlist, ondemand: OnDemand }[route];
+  const Page = { home: Home, programmas: Programmas, playlist: Playlist, ondemand: OnDemand, alijst: ALijst }[route];
 
   return (
     <div style={style}>
@@ -58,17 +58,14 @@ function App() {
                     options={['#f4f2ec', '#ffffff', '#e8e6e0', '#f0ede4']}
                     onChange={v => setTweak('paper', v)}/>
       </TweaksPanel>
+
+      <CookieConsent side="right"/>
     </div>
   );
 }
 
 function Stub({ route, setRoute }) {
-  const labels = {
-    sessions:   ['Scorpio Sessions',   'Live opnames uit studio 3 — komen binnenkort.'],
-    cultafacts: ['Cultafacts',         'Artikelarchief & agenda — komen binnenkort.'],
-    shop:       ['Shop',               'T-shirts, totebags, broadcast-archief op vinyl.'],
-  };
-  const [title, sub] = labels[route] || ['—', '—'];
+  const [title, sub] = ['—', '—'];
   return (
     <section className="shell" style={{padding:'120px 24px 80px', minHeight:'60vh'}}>
       <div className="eyebrow" style={{color:'var(--mute)'}}>/ {route}</div>
