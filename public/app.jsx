@@ -57,7 +57,8 @@ function App() {
     setHashParam(param);
   }, []);
 
-  const Page = { home: Home, programmas: Programmas, playlist: Playlist, ondemand: OnDemand, alijst: ALijst }[route];
+  const Page = { home: Home, programmas: Programmas, playlist: Playlist, ondemand: OnDemand, alijst: ALijst,
+                 colofon: Colofon, vrijwilliger: Vrijwilliger, steun: Shop, logos: Logos }[route];
 
   return (
     <div style={style}>

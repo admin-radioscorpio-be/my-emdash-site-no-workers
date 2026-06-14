@@ -365,10 +365,10 @@ function Footer() {
           <div>
             <h4>Over</h4>
             <ul>
-              <li><a>Over ons</a></li>
-              <li><a>Word vrijwilliger</a></li>
-              <li><a>Steun</a></li>
-              <li><a>Contact</a></li>
+              <li><a href="#/colofon" style={{cursor:'pointer'}}>Over ons</a></li>
+              <li><a href="#/vrijwilliger" style={{cursor:'pointer'}}>Word vrijwilliger</a></li>
+              <li><a href="#/steun" style={{cursor:'pointer'}}>Steun</a></li>
+              <li><a href="#/logos" style={{cursor:'pointer'}}>Logo's</a></li>
             </ul>
           </div>
           <div>
