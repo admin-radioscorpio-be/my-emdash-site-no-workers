@@ -1577,7 +1577,7 @@ html { overflow-x: clip; }
 }
 .al-current .mo {
   font-family: "Archivo", sans-serif; font-weight: 900;
-  font-size: clamp(56px, 8vw, 104px); line-height: 0.82;
+  font-size: clamp(36px, 5vw, 72px); line-height: 0.82;
   letter-spacing: -0.04em; text-transform: uppercase;
   color: var(--accent);
   padding: 22px 22px 6px;
